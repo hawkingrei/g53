@@ -1,0 +1,18 @@
+language: go
+go:
+  - 1.6
+  - 1.7.5
+
+install:
+  - export PATH=$PATH:$HOME/gopath/bin
+  - go clean
+  - go get github.com/mattn/goveralls
+  - go get github.com/tools/godep
+  - go get -d -u github.com/hawkingrei/dtdns
+  - godep restore
+before_script: 
+  - go get && go build
+
+after_success:
+  - go test 
+  - $HOME/gopath/bin/goveralls -repotoken 4gYjUjBmssKuQHB9zz4Z3X3GJ7uL6uT4E 
