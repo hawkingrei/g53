@@ -10,9 +10,9 @@ package servers
 
 import (
 	"encoding/json"
-	"net/http"
-    "net"
 	"github.com/gorilla/mux"
+	"net"
+	"net/http"
 
 	"github.com/hawkingrei/dtdns/src/utils"
 )
@@ -109,11 +109,11 @@ func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Property \"Value\" is NOT IP", http.StatusInternalServerError)
 		return
 	}
-	if service.Aliases == ""  {
+	if service.Aliases == "" {
 		http.Error(w, "Property \"Aliases\" is required", http.StatusInternalServerError)
 		return
 	}
-	if  service.TTL <=0  {
+	if service.TTL <= 0 {
 		http.Error(w, "Property \"TTL\" is required", http.StatusInternalServerError)
 		return
 	}

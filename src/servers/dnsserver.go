@@ -11,11 +11,11 @@ package servers
 import (
 	"errors"
 	"net"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-	"reflect"
 
 	"github.com/miekg/dns"
 
@@ -62,7 +62,7 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 	s := &DNSServer{
 		config:   c,
 		services: make(map[string]*Service),
-		lock:     &sync.RWMutex{},		
+		lock:     &sync.RWMutex{},
 	}
 
 	logger.Debugf("Handling DNS requests for '%s'.", c.Domain.String())
@@ -89,7 +89,7 @@ func (s *DNSServer) Stop() {
 
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(id string, service Service) {
-	if (service.Record_type == "CNAME" || service.Record_type == "A"){
+	if service.Record_type == "CNAME" || service.Record_type == "A" {
 		defer s.lock.Unlock()
 		s.lock.Lock()
 
@@ -327,8 +327,8 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	query := r.Question[0].Name
 
 	// trim off any trailing dot
-	if query[len(query) - 1] == '.' {
-		query = query[:len(query) - 1]
+	if query[len(query)-1] == '.' {
+		query = query[:len(query)-1]
 	}
 
 	logger.Debugf("DNS request for query '%s' from remote '%s'", w.RemoteAddr().String(), w.RemoteAddr())
@@ -362,13 +362,13 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if len(m.Answer) == 0 {
 		s.handleForward(w, r)
 		return
-	}else{
+	} else {
 		w.WriteMsg(m)
 	}
-	
+
 }
 
-func (s *DNSServer) 	handleReverseRequest(w dns.ResponseWriter, r *dns.Msg) {
+func (s *DNSServer) handleReverseRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
 	m.RecursionAvailable = true
@@ -384,8 +384,8 @@ func (s *DNSServer) 	handleReverseRequest(w dns.ResponseWriter, r *dns.Msg) {
 	query := r.Question[0].Name
 
 	// trim off any trailing dot
-	if query[len(query) - 1] == '.' {
-		query = query[:len(query) - 1]
+	if query[len(query)-1] == '.' {
+		query = query[:len(query)-1]
 	}
 
 	for service := range s.queryIP(query) {
@@ -463,11 +463,11 @@ func (s *DNSServer) queryServices(query string) chan *Service {
 			//	test = append(test, strings.Split(strings.ToLower(service.Name), ".")...)
 			//}
 
-	 		//if len(service.Image) > 0 {
+			//if len(service.Image) > 0 {
 			//	test = append(test, strings.Split(service.Image, ".")...)
 			//}
 
-			test = append(test, strings.Split(service.Aliases,".")...)
+			test = append(test, strings.Split(service.Aliases, ".")...)
 			//test = append(test, ".")
 			//test = append(test, s.config.Domain...)
 
@@ -556,7 +556,7 @@ func isPrefixQuery(query, name []string) bool {
 	//}
 	logger.Info(reflect.DeepEqual(query, name))
 	return reflect.DeepEqual(query, name)
-	
+
 }
 
 func reverse(input []string) []string {
