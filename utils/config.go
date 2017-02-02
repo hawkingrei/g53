@@ -60,7 +60,7 @@ type Config struct {
 // NewConfig creates a new config
 func NewConfig() *Config {
 	return &Config{
-		Nameservers: nameservers{"8.8.4.4:53", "8.8.8.8:53"},
+		Nameservers: nameservers{"114.114.114.114:53", "8.8.8.8:53"},
 		DnsAddr:     ":53",
 		Domain:      NewDomain("suphawking.com"),
 		//DockerHost:  dockerHost,
