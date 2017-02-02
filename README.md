@@ -25,3 +25,7 @@ go build -o ${GOPATH}/bin/G53
 wget https://raw.githubusercontent.com/hawkingrei/G53/master/Dockerfile
 sudo docker build -t g53 .
 ```
+
+#### To do
+- *Support tls
+- *Add cache
