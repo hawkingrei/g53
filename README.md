@@ -28,5 +28,5 @@ sudo docker run -p 53:53/udp  g53
 ```
 
 #### To do
-- *Support tls
-- *Add cache
+- Support tls
+- Add cache
