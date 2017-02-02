@@ -1,4 +1,4 @@
-one_folder: c:\g53
+clone_folder: c:\g53
 
 environment:
   GOPATH: c:\gopath
