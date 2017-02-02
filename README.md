@@ -9,7 +9,7 @@
 export GOPATH=/tmp/go
 export PATH=${PATH}:${GOPATH}/bin
 go get -v github.com/tools/godep
-go get -d -v https://github.com/hawkingrei/G53
+go get -d -v github.com/hawkingrei/G53
 cd ${GOPATH}/src/github.com/hawkingrei/G53
 godep restore
 cd ${GOPATH}/src/github.com/hawkingrei/G53/
