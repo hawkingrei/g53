@@ -5,6 +5,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/hawkingrei/g53)](https://goreportcard.com/report/github.com/hawkingrei/g53)
 
 #### Build
+
+##### Building without docker:
+
 ```
 export GOPATH=/tmp/go
 export PATH=${PATH}:${GOPATH}/bin
@@ -14,4 +17,11 @@ cd ${GOPATH}/src/github.com/hawkingrei/G53
 godep restore
 cd ${GOPATH}/src/github.com/hawkingrei/G53/
 go build -o ${GOPATH}/bin/G53
+```
+
+##### Building with docker:
+
+```
+wget https://raw.githubusercontent.com/hawkingrei/G53/master/Dockerfile
+sudo docker build -t g53 .
 ```
