@@ -3,15 +3,20 @@ go:
   - 1.6
   - 1.7.5
 
+sudo: required
+
 install:
   - export PATH=$PATH:$HOME/gopath/bin
-  - go clean
+  - go env
   - go get github.com/mattn/goveralls
   - go get github.com/tools/godep
-  - go get -d -u github.com/hawkingrei/dtdns
+  - go get -d -u github.com/hawkingrei/G53
   - godep restore
 before_script: 
   - go get && go build
+
+script:
+  - go  test -v ./...
 
 after_success:
   - go test 

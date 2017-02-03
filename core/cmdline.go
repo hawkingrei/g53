@@ -27,7 +27,7 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 
 	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("114.114.114.114:53").Strings()
 	dns := app.Flag("dns", "Listen DNS requests on this address").Default(res.DnsAddr).Short('d').String()
-	http := app.Flag("http", "Listen HTTP requests on this address").Default(res.HttpAddr).Short('t').String()
+	http := app.Flag("http", "Listen HTTP requests on this address").Default(res.HttpAddr).Default(":80").String()
 	domain := app.Flag("domain", "Domain that is appended to all requests").Default(res.Domain.String()).String()
 	environment := app.Flag("environment", "Optional context before domain suffix").Default("").String()
 	ttl := app.Flag("ttl", "TTL for matched requests").Default(strconv.FormatInt(int64(res.Ttl), 10)).Int()
