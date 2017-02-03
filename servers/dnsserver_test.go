@@ -8,11 +8,11 @@ import (
 )
 
 func TestDNSError(t *testing.T) {
-	const TestAddr = "127.0.0.1:9953"
+	const TestAddr = "127.0.0.1:9954"
 
 	config := utils.NewConfig()
 	config.DnsAddr = TestAddr
-	config.Nameservers = []string{"180.76.76.77:53"}
+	config.Nameservers = []string{"123.123.123.123:53"}
 
 	server := NewDNSServer(config)
 	go server.Start()
@@ -57,7 +57,7 @@ func TestDNSError(t *testing.T) {
 }
 
 func TestDNSResponse(t *testing.T) {
-	const TestAddr = "127.0.0.1:9954"
+	const TestAddr = "127.0.0.1:9955"
 
 	config := utils.NewConfig()
 	config.DnsAddr = TestAddr
@@ -86,34 +86,11 @@ func TestDNSResponse(t *testing.T) {
 		{"google.com.", -1, "A", dns.RcodeSuccess},
 		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
 		{"google.com.", -1, "MX", dns.RcodeSuccess},
-		{"wiki.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
+		//{"wiki.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"b.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
 		{"foo.docker.", 0, "A", dns.RcodeNameError},
-		//{"www.1d1u1i1t1a1n1g1.net.",-1,"A",dns.RcodeSuccess},
-		//{"docker.", 5, "A", 0},
-		//{"docker.", 5, "MX", 0},
-		//{"*.docker.", 5, "A", 0},
-		//{"*.docker.", 5, "MX", 0},
-		//{"bar.docker.", 2, "A", 0},
-		//{"bar.docker.", 2, "MX", 0},
-		//{"bar.docker.", 0, "AAAA", 0},
-		//{"foo.docker.", 0, "A", dns.RcodeNameError},
-		//{"foo.docker.", 0, "MX", dns.RcodeNameError},
-		//{"baz.bar.docker.", 1, "A", 0},
-		//{"baz.bar.docker.", 1, "MX", 0},
-		//{"joe.docker.", 1, "A", 0},
-		//{"joe.docker.", 1, "MX", 0},
-		//{"joe.docker.", 0, "AAAA", 0},
-		//{"super-alias.", 1, "A", 0},
-		//{"super-alias.", 1, "MX", 0},
-		//{"alias.domain.", 1, "A", 0},
-		//{"alias.domain.", 1, "MX", 0},
-		//{"1.0.0.127.in-addr.arpa.", 4, "PTR", 0},                  // two services match with two domains each
-		//{"5.0.0.127.in-addr.arpa.", 4, "PTR", 0},                  // one service match with three aliases
-		//{"4.0.0.127.in-addr.arpa.", 1, "PTR", 0},                  // only one service with a single domain
-		//{"2.0.0.127.in-addr.arpa.", 0, "PTR", dns.RcodeNameError}, // no match
 	}
 
 	c := new(dns.Client)
@@ -161,6 +138,7 @@ func TestDNSResponse(t *testing.T) {
 		}
 	}
 	server.Stop()
+	time.Sleep(250 * time.Millisecond)
 }
 
 func TestServiceManagement(t *testing.T) {

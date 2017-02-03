@@ -27,7 +27,7 @@ func NewHTTPServer(c *utils.Config, list ServiceListProvider) *HTTPServer {
 	router := mux.NewRouter()
 	router.HandleFunc("/services", s.getServices).Methods("GET")
 	router.HandleFunc("/services/{id}", s.getService).Methods("GET")
-	router.HandleFunc("/services/{id}", s.addService).Methods("PUT")
+	router.HandleFunc("/services", s.addService).Methods("PUT")
 	router.HandleFunc("/services/{id}", s.updateService).Methods("PATCH")
 	router.HandleFunc("/services/{id}", s.removeService).Methods("DELETE")
 	router.HandleFunc("/set/ttl", s.setTTL).Methods("PUT")
@@ -75,14 +75,6 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-
-	id, ok := vars["id"]
-	if !ok {
-		http.Error(w, "ID required", http.StatusBadRequest)
-		return
-	}
-
 	service := NewService()
 	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
 		logger.Errorf("JSON decoding error: %s", err)
@@ -93,7 +85,7 @@ func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	s.list.AddService(id, *service)
+	s.list.AddService(service.Aliases, *service)
 }
 
 func (s *HTTPServer) removeService(w http.ResponseWriter, req *http.Request) {

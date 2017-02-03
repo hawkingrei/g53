@@ -17,9 +17,6 @@ import (
 // Service represents a container and an attached DNS record
 // service(recode_type: "A",value: []string{"127.0.0.1","127.0.0.1"},Aliases: "www.duitang.net" ))
 type Service struct {
-	//Name    string
-	//Image   string
-	//IPs     []net.IP
 	RecordType string
 	Value      string
 	TTL        int
@@ -61,9 +58,6 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 
 	s.mux = dns.NewServeMux()
 	s.mux.HandleFunc(".", s.handleRequest)
-	//s.mux.HandleFunc("in-addr.arpa.", s.handleReverseRequest)
-	//s.mux.HandleFunc(".", s.handleForward)
-
 	s.server = &dns.Server{Addr: c.DnsAddr, Net: "udp", Handler: s.mux}
 
 	return s
@@ -71,6 +65,7 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 
 // Start starts the DNSServer
 func (s *DNSServer) Start() error {
+	logger.Infof("start")
 	return s.server.ListenAndServe()
 }
 
