@@ -1,11 +1,10 @@
 package main
 
 import (
-	"os"
 	"github.com/hawkingrei/G53/servers"
+	"os"
 )
 
-
 func main() {
-        servers.StartServer(os.Args[1:])
+	servers.StartServer(os.Args[1:])
 }
