@@ -55,6 +55,7 @@ func TestServiceRequests(t *testing.T) {
 		{"PATCH", "/services/boo.duitang.com.", `{"RecordType":"A","Value":"127.0.0.3","T":3600e123,"Aliases":"boo.duitang.com."}`, "", 200},
 		{"PATCH", "/services/boo.duitang.com.", `{"RecordType":"A","Value":"","TTL":3600.123,"Aliases":"boo.duitang.com."}`, "", 500},
 		{"GET", "/services", "", `{"boo.duitang.com.":{"RecordType":"A","Value":"127.0.0.3","TTL":3600,"Aliases":"boo.duitang.com."},"foo.duitang.com.":{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"foo.duitang.com."}}`, 200},
+		{"PUT", "/services", `{"RecordType":"CNAME","Value":"www.google.com.","TTL":3600,"Aliases":"boo.duitang.com."}`, "", 500},
 		{"PUT", "/services", `{"RecordType":"CNAME","Value":"www.google.com","TTL":3600,"Aliases":"boo.duitang.com."}`, "", 200},
 		{"DELETE", "/services/foo.duitang.com.", ``, "", 200},
 		{"DELETE", "/services/foo", ``, "", 400},

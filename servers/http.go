@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/hawkingrei/G53/utils"
 	"net"
 	"net/http"
-
-	"github.com/hawkingrei/G53/utils"
+	"regexp"
 )
 
 // HTTPServer represents the http endpoint
@@ -151,6 +151,11 @@ func (s *HTTPServer) validation(service *Service) error {
 		logger.Debugf("Property \"Record type\" is required or wrong")
 		return errors.New("Property \"Record type\" is required or wrong")
 	}
+	if service.RecordType == "CNAME" {
+		if !validateDomainName(service.Value) {
+			return errors.New("Property \"Value\" is wrong")
+		}
+	}
 	if service.Value == "" {
 		logger.Debugf("Property \"Value\" is required")
 		return errors.New("Property \"Value\" is required")
@@ -169,4 +174,10 @@ func (s *HTTPServer) validation(service *Service) error {
 	}
 	return nil
 
+}
+
+func validateDomainName(domain string) bool {
+	RegExp := regexp.MustCompile(`^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z
+ ]{2,3})$`)
+	return RegExp.MatchString(domain)
 }
