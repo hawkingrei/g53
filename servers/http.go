@@ -45,11 +45,7 @@ func (s *HTTPServer) Start() error {
 func (s *HTTPServer) getServices(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
-	if err := json.NewEncoder(w).Encode(s.list.GetAllServices()); err != nil {
-		logger.Errorf("Encoding error: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(s.list.GetAllServices())
 }
 
 func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
@@ -68,10 +64,7 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(service); err != nil {
-		logger.Errorf("Encoding error: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(service)
 }
 
 func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
@@ -145,6 +138,7 @@ func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
 	s.config.Ttl = value
 
 }
+
 
 func (s *HTTPServer) validation(service *Service) error {
 	if service.RecordType == "" || service.RecordType != "A" && service.RecordType != "CNAME" {
