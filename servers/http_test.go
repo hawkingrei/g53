@@ -37,6 +37,7 @@ func TestServiceRequests(t *testing.T) {
 		{"GET", "/services", "", "{}", 200},
 		{"PUT", "/services", `{"Aliaseo"%！@#！@#！@#！@#！@#！@#}`, "", 500},
 		{"GET", "/services/foo", "", "", 404},
+		{"GET", "/services/", "", "", 500},
 		{"PUT", "/services", `{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"foo.duitang.com."}`, "", 200},
 		{"PUT", "/services", `{"RecordType":"A","Value":"127.0.0","TTL":3600,"Aliases":"foo.duitang.com."}`, "", 500},
 		{"PUT", "/services", `{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":""}`, "", 500},
