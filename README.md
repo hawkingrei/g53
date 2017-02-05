@@ -28,6 +28,28 @@ sudo docker build -t g53 .
 sudo docker run -p 53:53/udp  g53
 ```
 
+#### HTTP API
+
+```
+# show all active services
+curl http://<host>:<ip>/services
+
+# show a service
+curl http://<host>:<ip>/services/<Aliases>
+
+# add new service manually
+curl http://<host>:<ip>/service/ -X PUT --data-ascii '{"RecordType":"CNAME","Value":"www.duitang.com","TTL":3600,"Aliases":"c.d.net"}'
+
+# remove a service
+curl http://<host>:<ip>/service/serviceid -X DELETE
+
+# change a property of an existing service
+curl http://<host>:<ip>/service/serviceid -X PATCH --data-ascii '{"ttl": 0}'
+
+# set new default TTL value
+curl http://<host>:<ip>/set/ttl -X PUT --data-ascii '10'
+```
+
 #### To do
 - Support tls
 - Add cache
