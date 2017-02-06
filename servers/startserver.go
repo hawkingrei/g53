@@ -52,8 +52,6 @@ func StartServer(rawParams []string) {
 			logger.Fatalf("Error: '%s'", err)
 		}
 	}
-	logger.Infof("ok dns config")
-	logger.Infof(config.DnsAddr)
 	httpServer := NewHTTPServer(config, dnsServer)
 	go func() {
 		if err := httpServer.Start(); err != nil {
