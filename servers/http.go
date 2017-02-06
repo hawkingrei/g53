@@ -141,23 +141,34 @@ func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
 
 
 func (s *HTTPServer) validation(service *Service) error {
-	if service.RecordType == "" || service.RecordType != "A" && service.RecordType != "CNAME" {
-		logger.Debugf("Property \"Record type\" is required or wrong")
-		return errors.New("Property \"Record type\" is required or wrong")
+	err := validateDomainType(service)
+	if err != nil {
+		return err
 	}
-	if service.RecordType == "CNAME" {
+	err = validateDomainValue(service)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func validateDomainType(service *Service) error {
+	switch service.RecordType {
+	case "A":
+		if net.ParseIP(service.Value) == nil {
+			logger.Debugf("Property \"Value\" is NOT IP")
+			return errors.New("Property \"Value\" is NOT IP")
+		}
+	case "CNAME":
 		if !validateDomainName(service.Value) {
 			return errors.New("Property \"Value\" is wrong")
 		}
+	default:
+		return errors.New("Property \"Record type\" is required or wrong")
 	}
-	if service.Value == "" {
-		logger.Debugf("Property \"Value\" is required")
-		return errors.New("Property \"Value\" is required")
-	}
-	if service.RecordType == "A" && net.ParseIP(service.Value) == nil {
-		logger.Debugf("Property \"Value\" is NOT IP")
-		return errors.New("Property \"Value\" is NOT IP")
-	}
+	return nil
+}
+
+func validateDomainValue(service *Service) error {
 	if service.Aliases == "" {
 		logger.Debugf("Property \"Aliases\" is required")
 		return errors.New("Property \"Aliases\" is required")
@@ -167,7 +178,6 @@ func (s *HTTPServer) validation(service *Service) error {
 		return errors.New("Property \"TTL\" is required")
 	}
 	return nil
-
 }
 
 func validateDomainName(domain string) bool {
