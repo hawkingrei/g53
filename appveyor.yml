@@ -18,7 +18,7 @@ install:
   - set PATH=bin/;%PATH%
 
 build_script:
-  - go get -d -v github.com/hawkingrei/G53
-  - cd c:\gopath\src\github.com\hawkingrei\G53
+  - go get -d -v github.com/hawkingrei/g53
+  - cd c:\gopath\src\github.com\hawkingrei\g53
   - go test -v ./...
   - go build
