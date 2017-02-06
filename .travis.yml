@@ -10,7 +10,7 @@ install:
   - go env
   - go get github.com/mattn/goveralls
   - go get github.com/tools/godep
-  - go get -d -u github.com/hawkingrei/G53
+  - go get -d -u github.com/hawkingrei/g53
   - godep restore
 before_script: 
   - go get && go build
