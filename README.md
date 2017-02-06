@@ -25,7 +25,7 @@ go build -o ${GOPATH}/bin/G53
 ```
 wget https://raw.githubusercontent.com/hawkingrei/G53/master/Dockerfile
 sudo docker build -t g53 .
-sudo docker run -p 53:53/udp  g53
+sudo docker run -d -p 80:80 -p 53:53/udp  g53
 ```
 
 #### HTTP API
@@ -38,13 +38,13 @@ curl http://<host>:<ip>/services
 curl http://<host>:<ip>/services/<Aliases>
 
 # add new service manually
-curl http://<host>:<ip>/service/ -X PUT --data-ascii '{"RecordType":"CNAME","Value":"www.duitang.com","TTL":3600,"Aliases":"c.d.net"}'
+curl http://<host>:<ip>/services -X PUT --data-ascii '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
 
 # remove a service
-curl http://<host>:<ip>/service/serviceid -X DELETE
+curl http://<host>:<ip>/service/<Aliases> -X DELETE
 
 # change a property of an existing service
-curl http://<host>:<ip>/service/serviceid -X PATCH --data-ascii '{"ttl": 0}'
+curl http://<host>:<ip>/service/<Aliases> -X PATCH --data-ascii '{"ttl": 0}'
 
 # set new default TTL value
 curl http://<host>:<ip>/set/ttl -X PUT --data-ascii '10'
