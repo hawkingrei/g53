@@ -139,7 +139,6 @@ func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
 
 }
 
-
 func (s *HTTPServer) validation(service *Service) error {
 	err := validateDomainType(service)
 	if err != nil {
