@@ -52,11 +52,7 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	id, ok := vars["id"]
-	if !ok {
-		http.Error(w, "ID required", http.StatusBadRequest)
-		return
-	}
+	id, _ := vars["id"]
 
 	service, err := s.list.GetService(id)
 	if err != nil {
@@ -84,11 +80,7 @@ func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
 func (s *HTTPServer) removeService(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
-	id, ok := vars["id"]
-	if !ok {
-		http.Error(w, "ID required", http.StatusBadRequest)
-		return
-	}
+	id, _ := vars["id"]
 
 	if err := s.list.RemoveService(id); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -99,11 +91,7 @@ func (s *HTTPServer) removeService(w http.ResponseWriter, req *http.Request) {
 func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
-	id, ok := vars["id"]
-	if !ok {
-		http.Error(w, "ID required", http.StatusBadRequest)
-		return
-	}
+	id, _ := vars["id"]
 
 	service, err := s.list.GetService(id)
 	if err != nil {
