@@ -27,3 +27,10 @@ func TestDomainCreation(t *testing.T) {
 		t.Error(input, "Expected:", expected, "Got:", actual)
 	}
 }
+
+func TestNewConfig(t *testing.T){
+	config := NewConfig()
+	if !reflect.DeepEqual(config.DnsAddr,":53") {
+		t.Error("DnsAddr error")	
+	}
+}	
