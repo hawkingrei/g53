@@ -28,9 +28,9 @@ func TestDomainCreation(t *testing.T) {
 	}
 }
 
-func TestNewConfig(t *testing.T){
+func TestNewConfig(t *testing.T) {
 	config := NewConfig()
-	if !reflect.DeepEqual(config.DnsAddr,":53") {
-		t.Error("DnsAddr error")	
+	if !reflect.DeepEqual(config.DnsAddr, ":53") {
+		t.Error("DnsAddr error")
 	}
-}	
+}
