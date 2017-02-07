@@ -39,3 +39,8 @@ func TestNameserverString(t *testing.T) {
 	ns := NewConfig().Nameservers
 	t.Log(ns.String())
 }
+
+func TestNameserverSet(t *testing.T){
+	ns := NewConfig().Nameservers.Set("8.8.4.4:53").String()
+	t.Log(ns)	
+}
