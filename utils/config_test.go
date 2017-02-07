@@ -34,3 +34,8 @@ func TestNewConfig(t *testing.T) {
 		t.Error("DnsAddr error")
 	}
 }
+
+func TestNameserverString(t *testing.T) {
+	ns := NewConfig().Nameservers
+	t.Log(ns.String())
+}
