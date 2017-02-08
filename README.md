@@ -1,5 +1,5 @@
 # G53
-[![Build Status](https://travis-ci.org/hawkingrei/G53.svg?branch=master)](https://travis-ci.org/hawkingrei/G53)
+[![Build Status](https://travis-ci.org/hawkingrei/g53.svg?branch=master)](https://travis-ci.org/hawkingrei/g53)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/hawkingrei/g53?branch=master&svg=true)](https://ci.appveyor.com/project/hawkingrei/g53/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/hawkingrei/G53/badge.svg?branch=master)](https://coveralls.io/github/hawkingrei/G53?branch=master)
 [![codebeat badge](https://codebeat.co/badges/cc33aba7-de9f-4cfc-95cf-8407baddb063)](https://codebeat.co/projects/github-com-hawkingrei-g53)
