@@ -13,8 +13,7 @@ install:
   - go get -d -u github.com/hawkingrei/g53
   - godep restore
 before_script: 
-  - go get && go build
-
+  - go get && make all 
 script:
   - go  test -v ./...
 

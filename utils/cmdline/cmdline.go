@@ -1,26 +1,57 @@
-package core
+package cmdline
 
 import (
+	"runtime"
+	"bytes"
 	"fmt"
 	"strconv"
-
+	"text/template"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
 )
 
-const (
-	// VERSION G53 version
-	VERSION = "0.0.1"
-)
 
 // CommandLine structure handling parameter parsing
 type CommandLine struct{}
 
+var versionTemplate = `Client:
+ Version:      {{.Version}}
+ Go version:   {{.GoVersion}}
+ Git commit:   {{.GitCommit}}
+ Built:        {{.BuildTime}}
+ OS/Arch:      {{.Os}}/{{.Arch}}`
+
+
+
+type versionOptions struct {
+	GitCommit string
+	Version   string
+	BuildTime string
+	GoVersion string
+	Os        string
+	Arch      string
+	
+}
+
+
 // ParseParameters Parse parameters
 func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Config, err error) {
+	var doc bytes.Buffer 
 	res = utils.NewConfig()
-
+        	
+	vo := versionOptions{
+		GitCommit : GitCommit,
+		Version   : Version,
+		BuildTime : BuildTime,
+		GoVersion : runtime.Version(),
+		Os        : runtime.GOOS,
+		Arch      : runtime.GOARCH,
+	}
+	templateFormat := versionTemplate
+	tmpl, _ := template.New("version").Parse(templateFormat)
+	tmpl.Execute(&doc, vo)
+	VERSION := doc.String()  	
 	app := kingpin.New("G53", "Automatic DNS.")
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')

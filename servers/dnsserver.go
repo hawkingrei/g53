@@ -11,7 +11,7 @@ import (
 
 	"github.com/miekg/dns"
 
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
 )
 
 // Service represents a container and an attached DNS record

@@ -3,13 +3,13 @@ package servers
 import (
 	"github.com/op/go-logging"
 
-	"github.com/hawkingrei/G53/core"
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/utils/cmdline"
 )
 
 func StartServer(rawParams []string) {
 	var logger = logging.MustGetLogger("G53.main")
-	var cmdLine core.CommandLine
+	var cmdLine cmdline.CommandLine
 	config, err := cmdLine.ParseParameters(rawParams)
 	if err != nil {
 		logger.Fatalf(err.Error())
