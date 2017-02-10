@@ -1,7 +1,7 @@
 package servers
 
 import (
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
 	"github.com/miekg/dns"
 	"testing"
 	"time"

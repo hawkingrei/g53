@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
 )
 
 func TestServiceRequests(t *testing.T) {

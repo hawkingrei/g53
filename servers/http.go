@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
-	"github.com/hawkingrei/G53/utils"
+	"github.com/hawkingrei/g53/utils"
 	"net"
 	"net/http"
 	"regexp"

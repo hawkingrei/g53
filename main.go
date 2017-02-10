@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hawkingrei/G53/servers"
+	"github.com/hawkingrei/g53/servers"
 	"os"
 )
 
