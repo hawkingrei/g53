@@ -2,7 +2,7 @@ FROM golang:1.7.5-alpine3.5
 RUN apk add --no-cache ca-certificates
 RUN set -ex \
 	&& apk add --no-cache --virtual .build-deps \
-		git 
+		git make 
 
 RUN go get -v github.com/tools/godep
 RUN go get -d -v github.com/hawkingrei/g53
