@@ -5,9 +5,11 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/utils/cmdline"
 	"net"
 	"net/http"
 	"regexp"
+	"runtime"
 )
 
 // HTTPServer represents the http endpoint
@@ -25,6 +27,7 @@ func NewHTTPServer(c *utils.Config, list ServiceListProvider) *HTTPServer {
 	}
 
 	router := mux.NewRouter()
+	router.HandleFunc("/version", s.getVersion).Methods("GET")
 	router.HandleFunc("/services", s.getServices).Methods("GET")
 	router.HandleFunc("/services/{id}", s.getService).Methods("GET")
 	router.HandleFunc("/services", s.addService).Methods("PUT")
@@ -40,6 +43,18 @@ func NewHTTPServer(c *utils.Config, list ServiceListProvider) *HTTPServer {
 // Start starts the http endpoint
 func (s *HTTPServer) Start() error {
 	return s.server.ListenAndServe()
+}
+func (s *HTTPServer) getVersion(w http.ResponseWriter, req *http.Request) {
+	version := cmdline.VersionOptions{
+		GitCommit: cmdline.GitCommit,
+		Version:   cmdline.Version,
+		BuildTime: cmdline.BuildTime,
+		GoVersion: runtime.Version(),
+		Os:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(version)
 }
 
 func (s *HTTPServer) getServices(w http.ResponseWriter, req *http.Request) {

@@ -21,7 +21,7 @@ var versionTemplate = `Client:
  Built:        {{.BuildTime}}
  OS/Arch:      {{.Os}}/{{.Arch}}`
 
-type versionOptions struct {
+type VersionOptions struct {
 	GitCommit string
 	Version   string
 	BuildTime string
@@ -30,12 +30,13 @@ type versionOptions struct {
 	Arch      string
 }
 
+
 // ParseParameters Parse parameters
 func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Config, err error) {
 	var doc bytes.Buffer
 	res = utils.NewConfig()
 
-	vo := versionOptions{
+	vo := VersionOptions{
 		GitCommit: GitCommit,
 		Version:   Version,
 		BuildTime: BuildTime,
