@@ -1,16 +1,15 @@
 package cmdline
 
 import (
-	"runtime"
 	"bytes"
 	"fmt"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"runtime"
 	"strconv"
 	"text/template"
-	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/hawkingrei/g53/utils"
 )
-
 
 // CommandLine structure handling parameter parsing
 type CommandLine struct{}
@@ -22,8 +21,6 @@ var versionTemplate = `Client:
  Built:        {{.BuildTime}}
  OS/Arch:      {{.Os}}/{{.Arch}}`
 
-
-
 type versionOptions struct {
 	GitCommit string
 	Version   string
@@ -31,27 +28,25 @@ type versionOptions struct {
 	GoVersion string
 	Os        string
 	Arch      string
-	
 }
-
 
 // ParseParameters Parse parameters
 func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Config, err error) {
-	var doc bytes.Buffer 
+	var doc bytes.Buffer
 	res = utils.NewConfig()
-        	
+
 	vo := versionOptions{
-		GitCommit : GitCommit,
-		Version   : Version,
-		BuildTime : BuildTime,
-		GoVersion : runtime.Version(),
-		Os        : runtime.GOOS,
-		Arch      : runtime.GOARCH,
+		GitCommit: GitCommit,
+		Version:   Version,
+		BuildTime: BuildTime,
+		GoVersion: runtime.Version(),
+		Os:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
 	}
 	templateFormat := versionTemplate
 	tmpl, _ := template.New("version").Parse(templateFormat)
 	tmpl.Execute(&doc, vo)
-	VERSION := doc.String()  	
+	VERSION := doc.String()
 	app := kingpin.New("G53", "Automatic DNS.")
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
