@@ -21,4 +21,4 @@ build_script:
   - go get -d -v github.com/hawkingrei/g53
   - cd c:\gopath\src\github.com\hawkingrei\g53
   - go test -v ./...
-  - go build
+  - go build 

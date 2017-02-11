@@ -17,7 +17,7 @@ go get -d -v github.com/hawkingrei/g53
 cd ${GOPATH}/src/github.com/hawkingrei/g53
 godep restore
 cd ${GOPATH}/src/github.com/hawkingrei/g53/
-go build -o ${GOPATH}/bin/g53
+make all
 ```
 
 ##### Building with docker:
