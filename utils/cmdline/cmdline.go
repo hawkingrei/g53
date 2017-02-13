@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/version"
 )
 
 // CommandLine structure handling parameter parsing
@@ -21,25 +22,15 @@ var versionTemplate = `Client:
  Built:        {{.BuildTime}}
  OS/Arch:      {{.Os}}/{{.Arch}}`
 
-type VersionOptions struct {
-	GitCommit string
-	Version   string
-	BuildTime string
-	GoVersion string
-	Os        string
-	Arch      string
-}
-
-
 // ParseParameters Parse parameters
 func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Config, err error) {
 	var doc bytes.Buffer
 	res = utils.NewConfig()
 
-	vo := VersionOptions{
-		GitCommit: GitCommit,
-		Version:   Version,
-		BuildTime: BuildTime,
+	vo := version.VersionOptions{
+		GitCommit: version.GitCommit,
+		Version:   version.Version,
+		BuildTime: version.BuildTime,
 		GoVersion: runtime.Version(),
 		Os:        runtime.GOOS,
 		Arch:      runtime.GOARCH,

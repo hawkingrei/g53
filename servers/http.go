@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/hawkingrei/g53/utils"
-	"github.com/hawkingrei/g53/utils/cmdline"
+	"github.com/hawkingrei/g53/version"
 	"net"
 	"net/http"
 	"regexp"
@@ -45,10 +45,10 @@ func (s *HTTPServer) Start() error {
 	return s.server.ListenAndServe()
 }
 func (s *HTTPServer) getVersion(w http.ResponseWriter, req *http.Request) {
-	version := cmdline.VersionOptions{
-		GitCommit: cmdline.GitCommit,
-		Version:   cmdline.Version,
-		BuildTime: cmdline.BuildTime,
+	version := version.VersionOptions{
+		GitCommit: version.GitCommit,
+		Version:   version.Version,
+		BuildTime: version.BuildTime,
 		GoVersion: runtime.Version(),
 		Os:        runtime.GOOS,
 		Arch:      runtime.GOARCH,
@@ -58,7 +58,6 @@ func (s *HTTPServer) getVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *HTTPServer) getServices(w http.ResponseWriter, req *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	json.NewEncoder(w).Encode(s.list.GetAllServices())
 }

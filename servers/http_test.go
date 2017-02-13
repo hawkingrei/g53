@@ -11,7 +11,7 @@ package servers
 import (
 	"encoding/json"
 	"github.com/hawkingrei/g53/utils"
-	"github.com/hawkingrei/g53/utils/cmdline"
+	"github.com/hawkingrei/g53/version"
 	"io/ioutil"
 	"net/http"
 	"runtime"
@@ -32,10 +32,10 @@ func TestServiceRequests(t *testing.T) {
 	// Allow some time for server to start
 	time.Sleep(250 * time.Millisecond)
 
-	version, _ := json.Marshal(cmdline.VersionOptions{
-		GitCommit: cmdline.GitCommit,
-		Version:   cmdline.Version,
-		BuildTime: cmdline.BuildTime,
+	version, _ := json.Marshal(version.VersionOptions{
+		GitCommit: version.GitCommit,
+		Version:   version.Version,
+		BuildTime: version.BuildTime,
 		GoVersion: runtime.Version(),
 		Os:        runtime.GOOS,
 		Arch:      runtime.GOARCH,
