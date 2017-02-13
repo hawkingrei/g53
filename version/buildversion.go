@@ -1,4 +1,4 @@
-package cmdline
+package version
 
 var (
 	GitCommit string = "library-import"
