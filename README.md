@@ -48,6 +48,9 @@ curl http://<host>:<ip>/service/<Aliases> -X PATCH --data-ascii '{"ttl": 0}'
 
 # set new default TTL value
 curl http://<host>:<ip>/set/ttl -X PUT --data-ascii '10'
+
+# get version information
+curl http://<host>:<ip>/version
 ```
 
 #### To do
