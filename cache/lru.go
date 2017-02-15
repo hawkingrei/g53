@@ -51,6 +51,6 @@ func NewLRUCache(capacity uint64) *LRUCache {
 func NewRecordCache() *RecordCache{
 	return &RecordCache{
 		list:	list.New(),
-		table:  make(map[string]*Record(size:0,list:[])),
+		table:  make(map[string]*Record,
 	}
 }
