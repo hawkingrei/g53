@@ -1,236 +1,114 @@
+// This package provides a simple LRU cache. It is based on the
+// LRU implementation in groupcache:
+// https://github.com/golang/groupcache/tree/master/lru
 package lru
 
 import (
-	"container/list"
-	"encoding/gob"
-	"fmt"
-	"io"
-	"os"
 	"sync"
-	"time"
+
+	"github.com/hashicorp/golang-lru/simplelru"
 )
 
-type LRUCache struct {
-	mu sync.Mutex
-
-	// list & table of *entry objects
-	list  *list.List
-	table map[string]*list.Element
-
-	// Our current size, in bytes. Obviously a gross simplification and low-grade
-	// approximation.
-	size uint64
-
-	// How many bytes we are limiting the cache to.
-	capacity uint64
+// Cache is a thread-safe fixed size LRU cache.
+type Cache struct {
+	lru  *simplelru.LRU
+	lock sync.RWMutex
 }
 
-// Values that go into LRUCache need to satisfy this interface.
-type Value interface {
-	Size() int
+// New creates an LRU of the given size
+func New(size int) (*Cache, error) {
+	return NewWithEvict(size, nil)
 }
 
-type Item struct {
-	Key   string
-	Value Value
-}
-
-type entry struct {
-	key           string
-	value         Value
-	size          int
-	time_accessed time.Time
-}
-
-func NewLRUCache(capacity uint64) *LRUCache {
-	return &LRUCache{
-		list:     list.New(),
-		table:    make(map[string]*list.Element),
-		capacity: capacity,
+// NewWithEvict constructs a fixed size cache with the given eviction
+// callback.
+func NewWithEvict(size int, onEvicted func(key interface{}, value interface{})) (*Cache, error) {
+	lru, err := simplelru.NewLRU(size, simplelru.EvictCallback(onEvicted))
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (lru *LRUCache) Get(key string) (v Value, ok bool) {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	element := lru.table[key]
-	if element == nil {
-		return nil, false
+	c := &Cache{
+		lru: lru,
 	}
-	lru.moveToFront(element)
-	return element.Value.(*entry).value, true
+	return c, nil
 }
 
-func (lru *LRUCache) Set(key string, value Value) {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
+// Purge is used to completely clear the cache
+func (c *Cache) Purge() {
+	c.lock.Lock()
+	c.lru.Purge()
+	c.lock.Unlock()
+}
 
-	if element := lru.table[key]; element != nil {
-		lru.updateInplace(element, value)
+// Add adds a value to the cache.  Returns true if an eviction occurred.
+func (c *Cache) Add(key, value interface{}) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.lru.Add(key, value)
+}
+
+// Get looks up a key's value from the cache.
+func (c *Cache) Get(key interface{}) (interface{}, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.lru.Get(key)
+}
+
+// Check if a key is in the cache, without updating the recent-ness
+// or deleting it for being stale.
+func (c *Cache) Contains(key interface{}) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Contains(key)
+}
+
+// Returns the key value (or undefined if not found) without updating
+// the "recently used"-ness of the key.
+func (c *Cache) Peek(key interface{}) (interface{}, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Peek(key)
+}
+
+// ContainsOrAdd checks if a key is in the cache  without updating the
+// recent-ness or deleting it for being stale,  and if not, adds the value.
+// Returns whether found and whether an eviction occurred.
+func (c *Cache) ContainsOrAdd(key, value interface{}) (ok, evict bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.lru.Contains(key) {
+		return true, false
 	} else {
-		lru.addNew(key, value)
+		evict := c.lru.Add(key, value)
+		return false, evict
 	}
 }
 
-func (lru *LRUCache) SetIfAbsent(key string, value Value) {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	if element := lru.table[key]; element != nil {
-		lru.moveToFront(element)
-	} else {
-		lru.addNew(key, value)
-	}
+// Remove removes the provided key from the cache.
+func (c *Cache) Remove(key interface{}) {
+	c.lock.Lock()
+	c.lru.Remove(key)
+	c.lock.Unlock()
 }
 
-func (lru *LRUCache) Delete(key string) bool {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	element := lru.table[key]
-	if element == nil {
-		return false
-	}
-
-	lru.list.Remove(element)
-	delete(lru.table, key)
-	lru.size -= uint64(element.Value.(*entry).size)
-	return true
+// RemoveOldest removes the oldest item from the cache.
+func (c *Cache) RemoveOldest() {
+	c.lock.Lock()
+	c.lru.RemoveOldest()
+	c.lock.Unlock()
 }
 
-func (lru *LRUCache) Clear() {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	lru.list.Init()
-	lru.table = make(map[string]*list.Element)
-	lru.size = 0
+// Keys returns a slice of the keys in the cache, from oldest to newest.
+func (c *Cache) Keys() []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Keys()
 }
 
-func (lru *LRUCache) SetCapacity(capacity uint64) {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	lru.capacity = capacity
-	lru.checkCapacity()
-}
-
-func (lru *LRUCache) Stats() (length, size, capacity uint64, oldest time.Time) {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-	if lastElem := lru.list.Back(); lastElem != nil {
-		oldest = lastElem.Value.(*entry).time_accessed
-	}
-	return uint64(lru.list.Len()), lru.size, lru.capacity, oldest
-}
-
-func (lru *LRUCache) StatsJSON() string {
-	if lru == nil {
-		return "{}"
-	}
-	l, s, c, o := lru.Stats()
-	return fmt.Sprintf("{\"Length\": %v, \"Size\": %v, \"Capacity\": %v, \"OldestAccess\": \"%v\"}", l, s, c, o)
-}
-
-func (lru *LRUCache) Keys() []string {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	keys := make([]string, 0, lru.list.Len())
-	for e := lru.list.Front(); e != nil; e = e.Next() {
-		keys = append(keys, e.Value.(*entry).key)
-	}
-	return keys
-}
-
-func (lru *LRUCache) Items() []Item {
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-
-	items := make([]Item, 0, lru.list.Len())
-	for e := lru.list.Front(); e != nil; e = e.Next() {
-		v := e.Value.(*entry)
-		items = append(items, Item{Key: v.key, Value: v.value})
-	}
-	return items
-}
-
-func (lru *LRUCache) SaveItems(w io.Writer) error {
-	items := lru.Items()
-	encoder := gob.NewEncoder(w)
-	return encoder.Encode(items)
-}
-
-func (lru *LRUCache) SaveItemsToFile(path string) error {
-	if wr, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644); err != nil {
-		return err
-	} else {
-		defer wr.Close()
-		return lru.SaveItems(wr)
-	}
-}
-
-func (lru *LRUCache) LoadItems(r io.Reader) error {
-	items := make([]Item, 0)
-	decoder := gob.NewDecoder(r)
-	if err := decoder.Decode(&items); err != nil {
-		return err
-	}
-
-	lru.mu.Lock()
-	defer lru.mu.Unlock()
-	for _, item := range items {
-		// XXX: copied from Set()
-		if element := lru.table[item.Key]; element != nil {
-			lru.updateInplace(element, item.Value)
-		} else {
-			lru.addNew(item.Key, item.Value)
-		}
-	}
-
-	return nil
-}
-
-func (lru *LRUCache) LoadItemsFromFile(path string) error {
-	if rd, err := os.Open(path); err != nil {
-		return err
-	} else {
-		defer rd.Close()
-		return lru.LoadItems(rd)
-	}
-}
-
-func (lru *LRUCache) updateInplace(element *list.Element, value Value) {
-	valueSize := value.Size()
-	sizeDiff := valueSize - element.Value.(*entry).size
-	element.Value.(*entry).value = value
-	element.Value.(*entry).size = valueSize
-	lru.size += uint64(sizeDiff)
-	lru.moveToFront(element)
-	lru.checkCapacity()
-}
-
-func (lru *LRUCache) moveToFront(element *list.Element) {
-	lru.list.MoveToFront(element)
-	element.Value.(*entry).time_accessed = time.Now()
-}
-
-func (lru *LRUCache) addNew(key string, value Value) {
-	newEntry := &entry{key, value, value.Size(), time.Now()}
-	element := lru.list.PushFront(newEntry)
-	lru.table[key] = element
-	lru.size += uint64(newEntry.size)
-	lru.checkCapacity()
-}
-
-func (lru *LRUCache) checkCapacity() {
-	// Partially duplicated from Delete
-	for lru.size > lru.capacity {
-		delElem := lru.list.Back()
-		delValue := delElem.Value.(*entry)
-		lru.list.Remove(delElem)
-		delete(lru.table, delValue.key)
-		lru.size -= uint64(delValue.size)
-	}
+// Len returns the number of items in the cache.
+func (c *Cache) Len() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Len()
 }
