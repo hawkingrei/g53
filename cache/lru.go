@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
     "sync"
+  	"time"
 )
 
 type Service struct {
@@ -10,6 +11,7 @@ type Service struct {
 	Value      string
 	TTL        int
 	Aliases    string
+	Time       time.time
 }
 type Record struct {
 	size int
@@ -52,3 +54,17 @@ func NewRecordCache() *RecordCache{
 		table:  make(map[string]*Record),
 	}
 }
+
+func (lru *LRUCache) Get(key string) (v Value, ok bool) {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
+	element := lru.table[key]["A"] 
+	if element == nil {
+		return nil, false
+	}
+	lru.moveToFront(element)
+	return element.Value.(*entry).value, true
+}
+
+
