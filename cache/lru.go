@@ -11,8 +11,7 @@ type Service struct {
 	Value      string
 	TTL        int
 	Aliases    string
-	Time       time.time
-
+	Time       time.Time
 }
 type Record struct {
 	size int
