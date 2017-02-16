@@ -21,6 +21,7 @@ type Service struct {
 	Value      string
 	TTL        int
 	Aliases    string
+	private    bool
 }
 
 // NewService creates a new service

@@ -8,7 +8,7 @@ import (
 )
 
 type entry struct {
-	//RecordType string
+	RecordType string
 	Value      string
 	TTL        int
 	Time       time.Time
@@ -28,7 +28,7 @@ type LRUCache struct {
 
 	// list & table of *entry objects
 	list  *list.List
-	table map[string]*RecordCache
+	table map[string]*list.Element
 
 	// Our current size, in bytes. Obviously a gross simplification and low-grade
 	// approximation.
@@ -47,22 +47,13 @@ func NewLRUCache(capacity uint64) *LRUCache {
 	}
 }
 
-//type to record
-func NewRecordCache() *RecordCache{
-	return &RecordCache{
-		list:	list.New(),
-		table:  make(map[string]*Record),
-	}
 
-}
+
 
 func (lru *LRUCache) AddNew(s servers.Service) {
-	entry := &entry{s.Value,s.TTL,time.Now()}
-	element := &(lru.list.PushFront(entry))
-	     
-	        
-	
-
-	
+	entry := &entry{s.RecordType,s.Value,s.TTL,time.Now()}
+	element := lru.list.PushFront(entry)
+	lru.table[s.Alisas] = element
+	lru.size += uint64(newEntry.size)
 }
 
