@@ -56,7 +56,7 @@ func NewRecordCache() *RecordCache{
 
 }
 
-func (lru *LRUCache) AddNew(s Service) {
+func (lru *LRUCache) AddNew(s servers.Service) {
 	entry := &entry{s.Value,s.TTL,time.Now()}
 	element := &(lru.list.PushFront(entry))
 	     
