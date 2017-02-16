@@ -4,13 +4,13 @@ import (
 	"container/list"
     "sync"
   	"time"
+  	"github.com/hawkingrei/g53/servers"
 )
 
-type Service struct {
+type entry struct {
 	//RecordType string
 	Value      string
 	TTL        int
-	Aliases    string
 	Time       time.Time
 }
 type Record struct {
@@ -54,5 +54,15 @@ func NewRecordCache() *RecordCache{
 		table:  make(map[string]*Record),
 	}
 
+}
+
+func (lru *LRUCache) AddNew(s Service) {
+	entry := &entry{s.Value,s.TTL,time.Now()}
+	element := &(lru.list.PushFront(entry))
+	     
+	        
+	
+
+	
 }
 
