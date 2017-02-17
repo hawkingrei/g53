@@ -20,8 +20,8 @@ type Service struct {
 	RecordType string
 	Value      string
 	TTL        int
+	Private    bool
 	Aliases    string
-	private    bool
 }
 
 // NewService creates a new service
