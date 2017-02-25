@@ -134,8 +134,8 @@ func (lru *LRUCache) Remove(s servers.Service) bool {
 				v = v - 1
 				lru.size = lru.size - 1
 
-				if len(tmp) ==0 {
-					delete(element.table,s.RecordType)
+				if len(tmp) == 0 {
+					delete(element.table, s.RecordType)
 				}
 				return true
 				break
@@ -184,7 +184,7 @@ func (lru *LRUCache) checkCapacity() {
 		delElem := lru.list.Back()
 		delValue := lru.table[delElem.Value.(*entry).Aliases]
 		del := delValue.table[delElem.Value.(*entry).RecordType]
-		
+
 		for v := range del.list {
 			if reflect.DeepEqual(delElem.Value.(*entry), del.list[v].Value.(*entry)) {
 				del.list = append(del.list[:v], del.list[v+1:]...)
@@ -194,8 +194,7 @@ func (lru *LRUCache) checkCapacity() {
 				break
 			}
 		}
-		
-		
+
 		lru.list.Remove(delElem)
 		lru.size = lru.size - 1
 	}
