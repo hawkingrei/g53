@@ -58,6 +58,25 @@ func (c *LRU) Purge() {
 	c.evictList.Init()
 }
 
+func (c *LRU) Set(originalValue servers.Service, modifyValue servers.Service) error {
+        if element := c.items[originalValue.Aliases]; element != nil {
+                tmp := element.table[originalValue.RecordType]
+                if tmp == nil {
+			 return errors.New("don't Exist service ")		
+		}
+		for v := range tmp.list {
+                        if reflect.DeepEqual(originalValue.Value, tmp.list[v].Value.(*entry).Value) {
+                                tmp.list[v].Value.(*entry).TTL = modifyValue.TTL
+                                tmp.list[v].Value.(*entry).Time = time.Now()
+                                tmp.list[v].Value.(*entry).Value = modifyValue.Value
+                                break
+                        }
+                }
+                return nil
+        }
+        return errors.New("don't Exist service ")
+}
+
 // Add adds a value to the cache.  Returns true if an eviction occurred.
 func (c *LRU) Add(s servers.Service) bool {
 	if elements := c.items[s.Aliases]; elements != nil {
@@ -120,7 +139,7 @@ func (c *LRU) RemoveOldest() {
 
 // Keys returns a slice of the keys in the cache, from oldest to newest.
 func (c *LRU) Keys() []interface{} {
-	keys := make([]interface{}, len(c.items))
+	keys := make([]interface{}, c.evictList.Len())
 	i := 0
 	for ent := c.evictList.Back(); ent != nil; ent = ent.Prev() {
 		keys[i] = ent.Value.(*entry).Aliases
