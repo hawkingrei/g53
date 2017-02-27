@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type entry struct {
+type Entry struct {
 	Aliases    string
 	RecordType string
 	Value      string
@@ -17,7 +17,7 @@ type entry struct {
 	Time       time.Time
 }
 
-type EvictCallback func(s *entry)
+type EvictCallback func(s *Entry)
 
 type Record struct {
 	list []*list.Element
@@ -51,7 +51,7 @@ func NewLRU(size int, onEvict EvictCallback) (*LRU, error) {
 func (c *LRU) Purge() {
 	for e := c.evictList.Front(); e != nil; e = e.Next() {
 		if c.onEvict != nil {
-			c.onEvict(e.Value.(*entry))
+			c.onEvict(e.Value.(*Entry))
 		}
 	}
 	c.items = make(map[interface{}]*Records)
@@ -59,22 +59,24 @@ func (c *LRU) Purge() {
 }
 
 func (c *LRU) Set(originalValue servers.Service, modifyValue servers.Service) error {
-        if element := c.items[originalValue.Aliases]; element != nil {
-                tmp := element.table[originalValue.RecordType]
-                if tmp == nil {
-			 return errors.New("don't Exist service ")		
+	if !(reflect.DeepEqual(originalValue.Aliases, modifyValue.Aliases) && reflect.DeepEqual(originalValue.RecordType, modifyValue.RecordType)) {
+		return errors.New("Changed service's aliases and RecordType must be equal.")
+	}
+	if element := c.items[originalValue.Aliases]; element != nil {
+		tmp := element.table[originalValue.RecordType]
+		if tmp == nil {
+			return errors.New("don't Exist service ")
 		}
 		for v := range tmp.list {
-                        if reflect.DeepEqual(originalValue.Value, tmp.list[v].Value.(*entry).Value) {
-                                tmp.list[v].Value.(*entry).TTL = modifyValue.TTL
-                                tmp.list[v].Value.(*entry).Time = time.Now()
-                                tmp.list[v].Value.(*entry).Value = modifyValue.Value
-                                break
-                        }
-                }
-                return nil
-        }
-        return errors.New("don't Exist service ")
+			if reflect.DeepEqual(originalValue.Value, tmp.list[v].Value.(*Entry).Value) {
+				tmp.list[v].Value.(*Entry).TTL = modifyValue.TTL
+				tmp.list[v].Value.(*Entry).Time = time.Now()
+				tmp.list[v].Value.(*Entry).Value = modifyValue.Value
+				return nil
+			}
+		}
+	}
+	return errors.New("don't Exist service ")
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
@@ -84,7 +86,7 @@ func (c *LRU) Add(s servers.Service) bool {
 			Records := &Record{make([]*list.Element, 0)}
 			elements.table[s.RecordType] = Records
 		}
-		content := &entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+		content := &Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
 		elements.table[s.RecordType].list = append(elements.table[s.RecordType].list, c.evictList.PushFront(content))
 	} else {
 		c.addNew(s)
@@ -97,16 +99,16 @@ func (c *LRU) Add(s servers.Service) bool {
 }
 
 // Get looks up a key's value from the cache.
-func (c *LRU) Get(s servers.Service) (*entry, error) {
+func (c *LRU) Get(s servers.Service) (*Entry, error) {
 	element := c.items[s.Aliases]
 	if element == nil {
-		return &entry{}, errors.New("Not exist")
+		return &Entry{}, errors.New("Not exist")
 	}
 	record := element.table[s.RecordType]
 	if record == nil {
-		return &entry{}, errors.New("Not exist")
+		return &Entry{}, errors.New("Not exist")
 	}
-	return record.list[rand.Intn(len(record.list))].Value.(*entry), nil
+	return record.list[rand.Intn(len(record.list))].Value.(*Entry), nil
 }
 
 // Check if a key is in the cache, without updating the recent-ness
@@ -122,14 +124,14 @@ func (c *LRU) RemoveOldest() {
 	if delElem == nil {
 		return
 	}
-	delValue := c.items[delElem.Value.(*entry).Aliases]
-	del := delValue.table[delElem.Value.(*entry).RecordType]
+	delValue := c.items[delElem.Value.(*Entry).Aliases]
+	del := delValue.table[delElem.Value.(*Entry).RecordType]
 
 	for v := range del.list {
-		if reflect.DeepEqual(delElem.Value.(*entry), del.list[v].Value.(*entry)) {
+		if reflect.DeepEqual(delElem.Value.(*Entry), del.list[v].Value.(*Entry)) {
 			del.list = append(del.list[:v], del.list[v+1:]...)
 			if len(del.list) == 0 {
-				delete(delValue.table, delElem.Value.(*entry).RecordType)
+				delete(delValue.table, delElem.Value.(*Entry).RecordType)
 			}
 			break
 		}
@@ -142,7 +144,7 @@ func (c *LRU) Keys() []interface{} {
 	keys := make([]interface{}, c.evictList.Len())
 	i := 0
 	for ent := c.evictList.Back(); ent != nil; ent = ent.Prev() {
-		keys[i] = ent.Value.(*entry).Aliases
+		keys[i] = ent.Value.(*Entry).Aliases
 		i++
 	}
 	return keys
@@ -154,7 +156,7 @@ func (c *LRU) Len() int {
 }
 
 func (c *LRU) addNew(s servers.Service) {
-	entries := &entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+	entries := &Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
 	newRecord := &Record{make([]*list.Element, 0)}
 	(*newRecord).list = append((*newRecord).list, c.evictList.PushFront(entries))
 	newRecords := &Records{table: make(map[string]*Record)}
@@ -167,7 +169,7 @@ func (c *LRU) Remove(s servers.Service) {
 	if element := c.items[s.Aliases]; element != nil {
 		tmp := element.table[s.RecordType].list
 		for v := 0; v < len(tmp); v++ {
-			if tmp[v].Value.(*entry).Value == s.Value {
+			if tmp[v].Value.(*Entry).Value == s.Value {
 				c.evictList.Remove(tmp[v])
 				tmp = append(tmp[:v], tmp[v+1:]...)
 				v = v - 1
@@ -175,7 +177,7 @@ func (c *LRU) Remove(s servers.Service) {
 					delete(element.table, s.RecordType)
 				}
 				if c.onEvict != nil {
-					c.onEvict(&entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()})
+					c.onEvict(&Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()})
 				}
 				break
 			}

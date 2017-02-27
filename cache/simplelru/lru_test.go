@@ -7,11 +7,11 @@ import (
 )
 
 func TestSimleLRU(t *testing.T) {
-	_, err := NewLRU(0, func(s *entry) { fmt.Println(*s) })
+	_, err := NewLRU(0, func(s *Entry) { fmt.Println(*s) })
 	if err == nil {
 		t.Errorf("should get a error")
 	}
-	l, err := NewLRU(3, func(s *entry) { fmt.Println(*s) })
+	l, err := NewLRU(3, func(s *Entry) { fmt.Println(*s) })
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}
@@ -20,10 +20,10 @@ func TestSimleLRU(t *testing.T) {
 	l.Remove(servers.Service{"A", "", 0, false, "www.google.com"})
 	l.Get(servers.Service{"A", "", 0, false, "www.google.com"})
 	fmt.Println(l.Contains("www.google.com"))
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (*tmp != entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (*tmp != Entry{}) {
 		t.Errorf("not get nil")
 	}
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (*tmp != entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (*tmp != Entry{}) {
 		t.Errorf("not get nil")
 	}
 	fmt.Println(l.Keys())
@@ -44,9 +44,15 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(servers.Service{"A", "10.0.0.2", 600, false, "www.google.com"})
 	l.Add(servers.Service{"A", "10.0.0.3", 600, false, "www.google.com"})
 	l.Add(servers.Service{"A", "10.0.0.4", 600, false, "www.google.com"})
-	l.Set(servers.Service{"A", "10.0.0.4", 600, false, "www.google.com"}, servers.Service{"A", "10.0.0.4", 600, true, "www.google.com"})
+	if result := l.Set(servers.Service{"A", "10.0.0.4", 600, false, "www.google.com"}, servers.Service{"A", "12.0.0.1", 600, false, "www.google.com"}); result != nil {
+		t.Errorf("should be nil")
+	}
 	if result := l.Set(servers.Service{"A", "10.0.0.4", 600, false, "www.renren.com"},
-		servers.Service{"A", "10.0.0.4", 600, true, "www.google.com"}); result == nil {
+		servers.Service{"A", "10.0.0.4", 600, true, "www.renren.com"}); result == nil {
+		t.Errorf("not get nil")
+	}
+	if result := l.Set(servers.Service{"A", "12.0.0.10", 600, false, "www.google.com"},
+		servers.Service{"A", "12.0.0.5", 600, false, "www.google.com"}); result == nil {
 		t.Errorf("not get nil")
 	}
 	l.Add(servers.Service{"A", "11.0.0.0", 600, true, "www.google.com"})
