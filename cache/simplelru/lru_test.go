@@ -7,11 +7,11 @@ import (
 )
 
 func TestSimleLRU(t *testing.T) {
-	_, err := NewLRU(0, func(s *Entry) { fmt.Println(*s) })
+	_, err := NewLRU(0, func(s servers.Service) { fmt.Println(s) })
 	if err == nil {
 		t.Errorf("should get a error")
 	}
-	l, err := NewLRU(3, func(s *Entry) { fmt.Println(*s) })
+	l, err := NewLRU(3, func(s servers.Service) { fmt.Println(s) })
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}
@@ -20,10 +20,10 @@ func TestSimleLRU(t *testing.T) {
 	l.Remove(servers.Service{"A", "", 0, false, "www.google.com"})
 	l.Get(servers.Service{"A", "", 0, false, "www.google.com"})
 	fmt.Println(l.Contains("www.google.com"))
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (*tmp != Entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (tmp != servers.Service{}) {
 		t.Errorf("not get nil")
 	}
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (*tmp != Entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (tmp != servers.Service{}) {
 		t.Errorf("not get nil")
 	}
 	fmt.Println(l.Keys())

@@ -2,17 +2,16 @@ package cache
 
 import (
 	"fmt"
-	"github.com/hawkingrei/g53/cache/simplelru"
 	"github.com/hawkingrei/g53/servers"
 	"testing"
 )
 
 func TestLRU(t *testing.T) {
-	_, err := NewWithEvict(0, func(s *simplelru.Entry) { fmt.Println(*s) })
+	_, err := NewWithEvict(0, func(s servers.Service) { fmt.Println(s) })
 	if err == nil {
 		t.Errorf("should get a error")
 	}
-	l, err := NewWithEvict(3, func(s *simplelru.Entry) { fmt.Println(*s) })
+	l, err := NewWithEvict(3, func(s servers.Service) { fmt.Println(s) })
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}
@@ -20,10 +19,10 @@ func TestLRU(t *testing.T) {
 	l.Get(servers.Service{"A", "", 0, false, "www.google.com"})
 	l.Remove(servers.Service{"A", "", 0, false, "www.google.com"})
 	l.Get(servers.Service{"A", "", 0, false, "www.google.com"})
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (*tmp != simplelru.Entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.google.com"}); (tmp != servers.Service{}) {
 		t.Errorf("not get nil")
 	}
-	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (*tmp != simplelru.Entry{}) {
+	if tmp, _ := l.Get(servers.Service{"MX", "", 0, false, "www.taobao.com"}); (tmp != servers.Service{}) {
 		t.Errorf("not get nil")
 	}
 	fmt.Println(l.Keys())

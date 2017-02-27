@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Entry struct {
+type entry struct {
 	Aliases    string
 	RecordType string
 	Value      string
@@ -17,7 +17,7 @@ type Entry struct {
 	Time       time.Time
 }
 
-type EvictCallback func(s *Entry)
+type EvictCallback func(s servers.Service)
 
 type Record struct {
 	list []*list.Element
@@ -47,11 +47,16 @@ func NewLRU(size int, onEvict EvictCallback) (*LRU, error) {
 	return c, nil
 }
 
+//entry To server
+func (c *LRU) entryToServer(s *entry) servers.Service {
+	return servers.Service{(*s).RecordType ,(*s).Value,(*s).TTL,false,(*s).Aliases}
+}
+
 // Purge is used to completely clear the cache
 func (c *LRU) Purge() {
 	for e := c.evictList.Front(); e != nil; e = e.Next() {
 		if c.onEvict != nil {
-			c.onEvict(e.Value.(*Entry))
+			c.onEvict(c.entryToServer(e.Value.(*entry)))
 		}
 	}
 	c.items = make(map[interface{}]*Records)
@@ -68,10 +73,10 @@ func (c *LRU) Set(originalValue servers.Service, modifyValue servers.Service) er
 			return errors.New("don't Exist service ")
 		}
 		for v := range tmp.list {
-			if reflect.DeepEqual(originalValue.Value, tmp.list[v].Value.(*Entry).Value) {
-				tmp.list[v].Value.(*Entry).TTL = modifyValue.TTL
-				tmp.list[v].Value.(*Entry).Time = time.Now()
-				tmp.list[v].Value.(*Entry).Value = modifyValue.Value
+			if reflect.DeepEqual(originalValue.Value, tmp.list[v].Value.(*entry).Value) {
+				tmp.list[v].Value.(*entry).TTL = modifyValue.TTL
+				tmp.list[v].Value.(*entry).Time = time.Now()
+				tmp.list[v].Value.(*entry).Value = modifyValue.Value
 				return nil
 			}
 		}
@@ -86,7 +91,7 @@ func (c *LRU) Add(s servers.Service) bool {
 			Records := &Record{make([]*list.Element, 0)}
 			elements.table[s.RecordType] = Records
 		}
-		content := &Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+		content := &entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
 		elements.table[s.RecordType].list = append(elements.table[s.RecordType].list, c.evictList.PushFront(content))
 	} else {
 		c.addNew(s)
@@ -99,16 +104,16 @@ func (c *LRU) Add(s servers.Service) bool {
 }
 
 // Get looks up a key's value from the cache.
-func (c *LRU) Get(s servers.Service) (*Entry, error) {
+func (c *LRU) Get(s servers.Service) (servers.Service, error) {
 	element := c.items[s.Aliases]
 	if element == nil {
-		return &Entry{}, errors.New("Not exist")
+		return servers.Service{}, errors.New("Not exist")
 	}
 	record := element.table[s.RecordType]
 	if record == nil {
-		return &Entry{}, errors.New("Not exist")
+		return servers.Service{}, errors.New("Not exist")
 	}
-	return record.list[rand.Intn(len(record.list))].Value.(*Entry), nil
+	return c.entryToServer(record.list[rand.Intn(len(record.list))].Value.(*entry)), nil
 }
 
 // Check if a key is in the cache, without updating the recent-ness
@@ -124,14 +129,14 @@ func (c *LRU) RemoveOldest() {
 	if delElem == nil {
 		return
 	}
-	delValue := c.items[delElem.Value.(*Entry).Aliases]
-	del := delValue.table[delElem.Value.(*Entry).RecordType]
+	delValue := c.items[delElem.Value.(*entry).Aliases]
+	del := delValue.table[delElem.Value.(*entry).RecordType]
 
 	for v := range del.list {
-		if reflect.DeepEqual(delElem.Value.(*Entry), del.list[v].Value.(*Entry)) {
+		if reflect.DeepEqual(delElem.Value.(*entry), del.list[v].Value.(*entry)) {
 			del.list = append(del.list[:v], del.list[v+1:]...)
 			if len(del.list) == 0 {
-				delete(delValue.table, delElem.Value.(*Entry).RecordType)
+				delete(delValue.table, delElem.Value.(*entry).RecordType)
 			}
 			break
 		}
@@ -144,7 +149,7 @@ func (c *LRU) Keys() []interface{} {
 	keys := make([]interface{}, c.evictList.Len())
 	i := 0
 	for ent := c.evictList.Back(); ent != nil; ent = ent.Prev() {
-		keys[i] = ent.Value.(*Entry).Aliases
+		keys[i] = ent.Value.(*entry).Aliases
 		i++
 	}
 	return keys
@@ -156,7 +161,7 @@ func (c *LRU) Len() int {
 }
 
 func (c *LRU) addNew(s servers.Service) {
-	entries := &Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+	entries := &entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
 	newRecord := &Record{make([]*list.Element, 0)}
 	(*newRecord).list = append((*newRecord).list, c.evictList.PushFront(entries))
 	newRecords := &Records{table: make(map[string]*Record)}
@@ -169,18 +174,20 @@ func (c *LRU) Remove(s servers.Service) {
 	if element := c.items[s.Aliases]; element != nil {
 		tmp := element.table[s.RecordType].list
 		for v := 0; v < len(tmp); v++ {
-			if tmp[v].Value.(*Entry).Value == s.Value {
+			if tmp[v].Value.(*entry).Value == s.Value {
+				if c.onEvict != nil {
+					c.onEvict(c.entryToServer(tmp[v].Value.(*entry)))
+				}
 				c.evictList.Remove(tmp[v])
 				tmp = append(tmp[:v], tmp[v+1:]...)
 				v = v - 1
 				if len(tmp) == 0 {
 					delete(element.table, s.RecordType)
 				}
-				if c.onEvict != nil {
-					c.onEvict(&Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()})
-				}
 				break
 			}
 		}
 	}
 }
+
+

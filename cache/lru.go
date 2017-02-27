@@ -19,7 +19,7 @@ func New(size int) (*Cache, error) {
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewWithEvict(size int, onEvicted func(s *simplelru.Entry)) (*Cache, error) {
+func NewWithEvict(size int, onEvicted func(s servers.Service)) (*Cache, error) {
 	lru, err := simplelru.NewLRU(size, simplelru.EvictCallback(onEvicted))
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (c *Cache) Purge() {
 }
 
 // Get looks up a key's value from the cache.
-func (c *Cache) Get(s servers.Service) (*simplelru.Entry, error) {
+func (c *Cache) Get(s servers.Service) (servers.Service, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Get(s)
