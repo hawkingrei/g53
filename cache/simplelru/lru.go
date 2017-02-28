@@ -49,7 +49,7 @@ func NewLRU(size int, onEvict EvictCallback) (*LRU, error) {
 
 //entry To server
 func (c *LRU) entryToServer(s *entry) servers.Service {
-	return servers.Service{(*s).RecordType ,(*s).Value,(*s).TTL,false,(*s).Aliases}
+	return servers.Service{(*s).RecordType, (*s).Value, (*s).TTL, false, (*s).Aliases}
 }
 
 // Purge is used to completely clear the cache
@@ -186,14 +186,26 @@ func (c *LRU) Remove(s servers.Service) error {
 				if len(tmp) == 0 {
 					delete(element.table, s.RecordType)
 				}
-				
+
 			}
 		}
 	}
-	if removeNum >0 {
+	if removeNum > 0 {
 		return nil
 	}
 	return errors.New("Nothing is removed")
 }
 
-
+// List list all element from the cache
+func (c *LRU) List() []servers.Service {
+	result := []servers.Service{}
+	for aliases := range c.items {
+		for recordType := range c.items[aliases].table {
+			tmp := c.items[aliases].table[recordType].list
+			for v := 0; v < len(tmp); v++ {
+				result = append(result, tmp[v])
+			}
+		}
+	}
+	return result
+}

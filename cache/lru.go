@@ -63,7 +63,7 @@ func (c *Cache) Remove(s servers.Service) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Remove(s)
-	
+
 }
 
 // RemoveOldest removes the oldest item from the cache.
@@ -85,4 +85,11 @@ func (c *Cache) Len() int {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.lru.Len()
+}
+
+//List return all items in the cache.
+func (c *Cache) List() []servers.Service {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.List()
 }

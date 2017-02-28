@@ -66,6 +66,7 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(servers.Service{"MX", "12.0.0.0", 600, true, "www.google.com"})
 	fmt.Println("4")
 	l.Add(servers.Service{"MX", "13.0.0.0", 600, true, "www.google.com"})
+	l.List()
 	fmt.Println("5")
 	l.Purge()
 	l.RemoveOldest()
