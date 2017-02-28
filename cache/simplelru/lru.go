@@ -170,7 +170,8 @@ func (c *LRU) addNew(s servers.Service) {
 }
 
 // removeElement is used to remove a given list element from the cache
-func (c *LRU) Remove(s servers.Service) {
+func (c *LRU) Remove(s servers.Service) error {
+	removeNum := 0
 	if element := c.items[s.Aliases]; element != nil {
 		tmp := element.table[s.RecordType].list
 		for v := 0; v < len(tmp); v++ {
@@ -181,13 +182,18 @@ func (c *LRU) Remove(s servers.Service) {
 				c.evictList.Remove(tmp[v])
 				tmp = append(tmp[:v], tmp[v+1:]...)
 				v = v - 1
+				removeNum = removeNum + 1
 				if len(tmp) == 0 {
 					delete(element.table, s.RecordType)
 				}
-				break
+				
 			}
 		}
 	}
+	if removeNum >0 {
+		return nil
+	}
+	return errors.New("Nothing is removed")
 }
 
 

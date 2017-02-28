@@ -59,10 +59,11 @@ func (c *Cache) Set(originalValue servers.Service, modifyValue servers.Service) 
 }
 
 // Remove removes the provided key from the cache.
-func (c *Cache) Remove(s servers.Service) {
+func (c *Cache) Remove(s servers.Service) error {
 	c.lock.Lock()
-	c.lru.Remove(s)
-	c.lock.Unlock()
+	defer c.lock.Unlock()
+	return c.lru.Remove(s)
+	
 }
 
 // RemoveOldest removes the oldest item from the cache.
