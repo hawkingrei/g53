@@ -40,19 +40,21 @@ type ServiceListProvider interface {
 
 // DNSServer represents a DNS server
 type DNSServer struct {
-	config   *utils.Config
-	server   *dns.Server
-	mux      *dns.ServeMux
-	services map[string]*Service
-	lock     *sync.RWMutex
+	config     *utils.Config
+	server     *dns.Server
+	mux        *dns.ServeMux
+	lock       *sync.RWMutex
+	publicDns  *Cache
+	privateDns *Cache
 }
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
 	s := &DNSServer{
-		config:   c,
-		services: make(map[string]*Service),
-		lock:     &sync.RWMutex{},
+		config:     c,
+		lock:       &sync.RWMutex{},
+		publicDns:  &New(10000),
+		privateDns: &New(100000000),
 	}
 
 	logger.Debugf("Handling DNS requests for '%s'.", c.Domain.String())
@@ -66,7 +68,7 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 
 // Start starts the DNSServer
 func (s *DNSServer) Start() error {
-	logger.Infof("start")
+	logger.Infof("start DNS Server")
 	return s.server.ListenAndServe()
 }
 
@@ -76,12 +78,10 @@ func (s *DNSServer) Stop() {
 }
 
 // AddService adds a new container and thus new DNS records
-func (s *DNSServer) AddService(id string, service Service) {
+func (s *DNSServer) AddService(service Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
-		defer s.lock.Unlock()
-		s.lock.Lock()
-
-		id = s.getExpandedID(id)
+		defer s.privateDns.Unlock()
+		s.privateDns.Lock()
 		s.services[id] = &service
 
 		logger.Debugf("Added service: '%s': '%s'.", id, service)
