@@ -12,6 +12,10 @@ import (
 	"runtime"
 )
 
+type setstruct struct{
+	originalValue utils.Service
+	modifyValue   utils.Service
+}
 // HTTPServer represents the http endpoint
 type HTTPServer struct {
 	config *utils.Config
@@ -25,14 +29,13 @@ func NewHTTPServer(c *utils.Config, list ServiceListProvider) *HTTPServer {
 		config: c,
 		list:   list,
 	}
-
 	router := mux.NewRouter()
 	router.HandleFunc("/version", s.getVersion).Methods("GET")
 	router.HandleFunc("/services", s.getServices).Methods("GET")
-	router.HandleFunc("/services/{id}", s.getService).Methods("GET")
-	router.HandleFunc("/services", s.addService).Methods("PUT")
-	router.HandleFunc("/services/{id}", s.updateService).Methods("PATCH")
-	router.HandleFunc("/services/{id}", s.removeService).Methods("DELETE")
+	router.HandleFunc("/service", s.getService).Methods("GET")
+	router.HandleFunc("/service", s.addService).Methods("PUT")
+	router.HandleFunc("/service", s.updateService).Methods("PATCH")
+	router.HandleFunc("/service", s.removeService).Methods("DELETE")
 	router.HandleFunc("/set/ttl", s.setTTL).Methods("PUT")
 
 	s.server = &http.Server{Addr: c.HttpAddr, Handler: router}
@@ -63,22 +66,25 @@ func (s *HTTPServer) getServices(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
+	service := NewService()
+	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
+		logger.Errorf("JSON decoding error: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	id, _ := vars["id"]
-
-	service, err := s.list.GetService(id)
+	result, err := s.list.GetService(*service)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	json.NewEncoder(w).Encode(service)
+	json.NewEncoder(w).Encode(result)
 }
 
 func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
-	service := NewService()
+	var service utils.Service 
 	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
 		logger.Errorf("JSON decoding error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,45 +94,42 @@ func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	s.list.AddService(service.Aliases, *service)
+	s.list.AddService(service)
 }
 
 func (s *HTTPServer) removeService(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-
-	id, _ := vars["id"]
-
-	if err := s.list.RemoveService(id); err != nil {
+	service := NewService()
+	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
+		logger.Errorf("JSON decoding error: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := s.list.RemoveService(*service); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 }
 
 func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-
-	id, _ := vars["id"]
-
-	service, err := s.list.GetService(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
+	var result map[string]utils.Service
+	if err := json.NewDecoder(req.Body).Decode(&result); err != nil {
 		logger.Errorf("JSON decoding error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := s.validation(&service); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := s.validation(result["originalValue"]); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 	}
-
+	if err := s.validation(result["modifyValue"]); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	// todo: this probably needs to be moved. consider stop event in the
 	// middle of sending PATCH. container would not be removed.
-	s.list.AddService(id, service)
-
+	if err := s.list.SetService(result["originalValue"],result["modifyValue"]); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 }
 
 func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
@@ -141,7 +144,7 @@ func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (s *HTTPServer) validation(service *Service) error {
+func (s *HTTPServer) validation(service utils.Service) error {
 	err := validateDomainType(service)
 	if err != nil {
 		return err
@@ -152,7 +155,7 @@ func (s *HTTPServer) validation(service *Service) error {
 	}
 	return nil
 }
-func validateDomainType(service *Service) error {
+func validateDomainType(service utils.Service) error {
 	switch service.RecordType {
 	case "A":
 		if net.ParseIP(service.Value) == nil {
@@ -169,7 +172,7 @@ func validateDomainType(service *Service) error {
 	return nil
 }
 
-func validateDomainValue(service *Service) error {
+func validateDomainValue(service utils.Service) error {
 	if service.Aliases == "" {
 		logger.Debugf("Property \"Aliases\" is required")
 		return errors.New("Property \"Aliases\" is required")

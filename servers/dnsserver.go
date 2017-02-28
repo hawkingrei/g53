@@ -1,10 +1,8 @@
 package servers
 
 import (
-	"errors"
 	"net"
 	"reflect"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,17 +14,18 @@ import (
 )
 
 // NewService creates a new service
-func NewService() (s *Service) {
-	s = &Service{TTL: -1}
+func NewService() (s *utils.Service) {
+	s = &utils.Service{TTL: -1}
 	return
 }
 
 // ServiceListProvider represents the entrypoint to get containers
 type ServiceListProvider interface {
-	AddService(string, Service)
-	RemoveService(string) error
-	GetService(string) (Service, error)
-	GetAllServices() map[string]Service
+	AddService(utils.Service)
+	RemoveService(utils.Service) error
+	SetService(utils.Service,utils.Service) error
+	GetService(utils.Service) (utils.Service, error)
+	GetAllServices() []utils.Service
 }
 
 // DNSServer represents a DNS server
@@ -41,11 +40,13 @@ type DNSServer struct {
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
+	publicDns, _ := cache.New(10000)
+	privateDns, _ := cache.New(100000000)
 	s := &DNSServer{
 		config:     c,
 		lock:       &sync.RWMutex{},
-		publicDns:  &New(10000),
-		privateDns: &New(100000000),
+		publicDns:  publicDns,
+		privateDns: privateDns,
 	}
 
 	logger.Debugf("Handling DNS requests for '%s'.", c.Domain.String())
@@ -68,12 +69,16 @@ func (s *DNSServer) Stop() {
 	s.server.Shutdown()
 }
 
+func (s *DNSServer) SetService (originalValue utils.Service, modifyValue utils.Service) error {
+	return s.privateDns.Set(originalValue,modifyValue)
+}
+
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(service utils.Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
-		s.privateDns.Add(&service)
+		s.privateDns.Add(service)
 
-		logger.Debugf("Added service: '%s': '%s'.", id, service)
+		logger.Debugf("Added service: '%s'.", service)
 		logger.Debugf("Handling DNS requests for '%s'.", service.Aliases)
 		s.mux.HandleFunc(service.Aliases+".", s.handleRequest)
 		//for _, alias := range service.Aliases {
@@ -81,7 +86,7 @@ func (s *DNSServer) AddService(service utils.Service) {
 		//	s.mux.HandleFunc(alias+".", s.handleRequest)
 		//}
 	} else {
-		logger.Warningf("Service '%s' ignored: No RecordType provided:", id, id)
+		logger.Warningf("Service '%s' ignored: No RecordType provided:", service)
 	}
 }
 
@@ -90,7 +95,7 @@ func (s *DNSServer) RemoveService(service utils.Service) error {
 	if err := s.privateDns.Remove(service); err != nil {
 		return err
 	}
-	s.mux.HandleRemove(s.services[id].Aliases + ".")
+	s.mux.HandleRemove(service.Aliases + ".")
 	logger.Debugf("Removeed service '%s'", service)
 
 	return nil
@@ -100,26 +105,18 @@ func (s *DNSServer) RemoveService(service utils.Service) error {
 func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
 	result, err := s.privateDns.Get(service)
 	if err !=nil {
-		return *new(Service), err
+		return *new(utils.Service), err
 	}
 	return result, err
 
 }
 
 // GetAllServices reads all services from the repository
-/*
-func (s *DNSServer) GetAllServices() map[string]Service {
-	defer s.lock.RUnlock()
-	s.lock.RLock()
 
-	list := make(map[string]Service, len(s.services))
-	for id, service := range s.services {
-		list[id] = *service
-	}
-
-	return list
+func (s *DNSServer) GetAllServices() []utils.Service {
+	return s.privateDns.List()
 }
-*/
+
 
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
@@ -179,7 +176,7 @@ func (s *DNSServer) makeServiceCNAME(n string, service *utils.Service) dns.RR {
 		}
 		rr.Target = service.Value + "."
 	} else {
-		logger.Errorf("No valid IP address found for container '%s' ", service.Aliases)
+		logger.Errorf("No valid IP address found for container '%s' at makeServiceCNAME", service.Aliases)
 	}
 	return rr
 }
@@ -207,7 +204,7 @@ func (s *DNSServer) makeServiceA(n string, service *utils.Service) dns.RR {
 		}
 		rr.A = net.ParseIP(service.Value)
 	} else {
-		logger.Errorf("No valid IP address found for container '%s' ", service.Aliases)
+		logger.Errorf("No valid IP address found for container '%s' at makeServiceA", service.Aliases)
 	}
 
 	return rr
@@ -240,10 +237,11 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if query[len(query)-1] == '.' {
 		query = query[:len(query)-1]
 	}
-
-	logger.Debugf("DNS request for query '%s' from remote '%s'", w.RemoteAddr().String(), w.RemoteAddr())
-	result := s.queryServices(query)
-	logger.Debugf("DNS record found for query '%s'", query)
+	
+	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype] ,"" ,0 ,true ,strings.ToLower(query)})
+	
+	
+	logger.Debugf("DNS record found for query '%s'  '%s'", query,dns.TypeToString[r.Question[0].Qtype])
 	for service := range result {
 		var rr dns.RR
 		switch r.Question[0].Qtype {
@@ -266,7 +264,6 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	// We didn't find a record corresponding to the query
 	if len(m.Answer) == 0 {
-
 		s.handleForward(w, r)
 		return
 	}
@@ -274,56 +271,19 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	return
 }
 
-func (s *DNSServer) queryServices(query string) chan *utils.Service {
-	c := make(chan *Service, 10)
 
+func (s *DNSServer) queryServices(service utils.Service) chan *utils.Service {
+	c := make(chan *utils.Service, 10)
 	go func() {
-		query := strings.Split(strings.ToLower(query), ".")
-
-		defer s.lock.RUnlock()
-		s.lock.RLock()
-
-		for _, service := range s.services {
-			// create the name for this service, skip empty strings
-			test := []string{}
-			// todo: add some cache to avoid calculating this every time
-
-			test = append(test, strings.Split(service.Aliases, ".")...)
-
-			if isPrefixQuery(query, test) {
-				c <- service
-			}
+		result,err := s.privateDns.Get(service)
+		if err == nil {
+			c <- &result
 		}
 		close(c)
 	}()
 	return c
 }
 
-// Checks for a partial match for container SHA and outputs it if found.
-func (s *DNSServer) getExpandedID(in string) (out string) {
-	out = in
-
-	// Hard to make a judgement on small image names.
-	if len(in) < 4 {
-		return
-	}
-
-	if isHex, _ := regexp.MatchString("^[0-9a-f]+$", in); !isHex {
-		return
-	}
-
-	for id := range s.services {
-		if len(id) == 64 {
-			if isHex, _ := regexp.MatchString("^[0-9a-f]+$", id); isHex {
-				if strings.HasPrefix(id, in) {
-					out = id
-					return
-				}
-			}
-		}
-	}
-	return
-}
 
 // TTL is used from config so that not-found result responses are not cached
 // for a long time. The other defaults left as is(skydns source) because they
