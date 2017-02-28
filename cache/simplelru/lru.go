@@ -3,7 +3,7 @@ package simplelru
 import (
 	"container/list"
 	"errors"
-	"github.com/hawkingrei/g53/servers"
+	"github.com/hawkingrei/g53/utils"
 	"math/rand"
 	"reflect"
 	"time"
@@ -17,7 +17,7 @@ type entry struct {
 	Time       time.Time
 }
 
-type EvictCallback func(s servers.Service)
+type EvictCallback func(s utils.Service)
 
 type Record struct {
 	list []*list.Element
@@ -48,8 +48,8 @@ func NewLRU(size int, onEvict EvictCallback) (*LRU, error) {
 }
 
 //entry To server
-func (c *LRU) entryToServer(s *entry) servers.Service {
-	return servers.Service{(*s).RecordType, (*s).Value, (*s).TTL, false, (*s).Aliases}
+func (c *LRU) entryToServer(s *entry) utils.Service {
+	return utils.Service{(*s).RecordType, (*s).Value, (*s).TTL, false, (*s).Aliases}
 }
 
 // Purge is used to completely clear the cache
@@ -63,7 +63,7 @@ func (c *LRU) Purge() {
 	c.evictList.Init()
 }
 
-func (c *LRU) Set(originalValue servers.Service, modifyValue servers.Service) error {
+func (c *LRU) Set(originalValue utils.Service, modifyValue utils.Service) error {
 	if !(reflect.DeepEqual(originalValue.Aliases, modifyValue.Aliases) && reflect.DeepEqual(originalValue.RecordType, modifyValue.RecordType)) {
 		return errors.New("Changed service's aliases and RecordType must be equal.")
 	}
@@ -85,7 +85,7 @@ func (c *LRU) Set(originalValue servers.Service, modifyValue servers.Service) er
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
-func (c *LRU) Add(s servers.Service) bool {
+func (c *LRU) Add(s utils.Service) bool {
 	if elements := c.items[s.Aliases]; elements != nil {
 		if element := elements.table[s.RecordType]; element == nil {
 			Records := &Record{make([]*list.Element, 0)}
@@ -104,14 +104,14 @@ func (c *LRU) Add(s servers.Service) bool {
 }
 
 // Get looks up a key's value from the cache.
-func (c *LRU) Get(s servers.Service) (servers.Service, error) {
+func (c *LRU) Get(s utils.Service) (utils.Service, error) {
 	element := c.items[s.Aliases]
 	if element == nil {
-		return servers.Service{}, errors.New("Not exist")
+		return utils.Service{}, errors.New("Not exist")
 	}
 	record := element.table[s.RecordType]
 	if record == nil {
-		return servers.Service{}, errors.New("Not exist")
+		return utils.Service{}, errors.New("Not exist")
 	}
 	return c.entryToServer(record.list[rand.Intn(len(record.list))].Value.(*entry)), nil
 }
@@ -160,7 +160,7 @@ func (c *LRU) Len() int {
 	return c.evictList.Len()
 }
 
-func (c *LRU) addNew(s servers.Service) {
+func (c *LRU) addNew(s utils.Service) {
 	entries := &entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
 	newRecord := &Record{make([]*list.Element, 0)}
 	(*newRecord).list = append((*newRecord).list, c.evictList.PushFront(entries))
@@ -170,7 +170,7 @@ func (c *LRU) addNew(s servers.Service) {
 }
 
 // removeElement is used to remove a given list element from the cache
-func (c *LRU) Remove(s servers.Service) error {
+func (c *LRU) Remove(s utils.Service) error {
 	removeNum := 0
 	if element := c.items[s.Aliases]; element != nil {
 		tmp := element.table[s.RecordType].list
@@ -197,13 +197,13 @@ func (c *LRU) Remove(s servers.Service) error {
 }
 
 // List list all element from the cache
-func (c *LRU) List() []servers.Service {
-	result := []servers.Service{}
+func (c *LRU) List() []utils.Service {
+	result := []utils.Service{}
 	for aliases := range c.items {
 		for recordType := range c.items[aliases].table {
 			tmp := c.items[aliases].table[recordType].list
 			for v := 0; v < len(tmp); v++ {
-				result = append(result, tmp[v])
+				result = append(result, c.entryToServer(tmp[v].Value.(*entry)))
 			}
 		}
 	}

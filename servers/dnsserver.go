@@ -15,16 +15,6 @@ import (
 	"github.com/hawkingrei/g53/cache"
 )
 
-// Service represents a container and an attached DNS record
-// service(recode_type: "A",value: []string{"127.0.0.1","127.0.0.1"},Aliases: "www.duitang.net" ))
-type Service struct {
-	RecordType string
-	Value      string
-	TTL        int
-	Private    bool
-	Aliases    string
-}
-
 // NewService creates a new service
 func NewService() (s *Service) {
 	s = &Service{TTL: -1}
@@ -79,7 +69,7 @@ func (s *DNSServer) Stop() {
 }
 
 // AddService adds a new container and thus new DNS records
-func (s *DNSServer) AddService(service Service) {
+func (s *DNSServer) AddService(service utils.Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
 		s.privateDns.Add(&service)
 
@@ -96,7 +86,7 @@ func (s *DNSServer) AddService(service Service) {
 }
 
 // RemoveService removes a new container and thus DNS records
-func (s *DNSServer) RemoveService(service Service) error {	
+func (s *DNSServer) RemoveService(service utils.Service) error {	
 	if err := s.privateDns.Remove(service); err != nil {
 		return err
 	}
@@ -107,7 +97,7 @@ func (s *DNSServer) RemoveService(service Service) error {
 }
 
 // GetService reads a service from the repository
-func (s *DNSServer) GetService(service Service) (Service, error) {
+func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
 	result, err := s.privateDns.Get(service)
 	if err !=nil {
 		return *new(Service), err
@@ -166,7 +156,7 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func (s *DNSServer) makeServiceCNAME(n string, service *Service) dns.RR {
+func (s *DNSServer) makeServiceCNAME(n string, service *utils.Service) dns.RR {
 	rr := new(dns.CNAME)
 
 	var ttl int
@@ -194,7 +184,7 @@ func (s *DNSServer) makeServiceCNAME(n string, service *Service) dns.RR {
 	return rr
 }
 
-func (s *DNSServer) makeServiceA(n string, service *Service) dns.RR {
+func (s *DNSServer) makeServiceA(n string, service *utils.Service) dns.RR {
 	rr := new(dns.A)
 
 	var ttl int
@@ -284,7 +274,7 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	return
 }
 
-func (s *DNSServer) queryServices(query string) chan *Service {
+func (s *DNSServer) queryServices(query string) chan *utils.Service {
 	c := make(chan *Service, 10)
 
 	go func() {

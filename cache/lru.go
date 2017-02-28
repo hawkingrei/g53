@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/hawkingrei/g53/cache/simplelru"
-	"github.com/hawkingrei/g53/servers"
+	"github.com/hawkingrei/g53/utils"
 	"sync"
 )
 
@@ -19,7 +19,7 @@ func New(size int) (*Cache, error) {
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewWithEvict(size int, onEvicted func(s servers.Service)) (*Cache, error) {
+func NewWithEvict(size int, onEvicted func(s utils.Service)) (*Cache, error) {
 	lru, err := simplelru.NewLRU(size, simplelru.EvictCallback(onEvicted))
 	if err != nil {
 		return nil, err
@@ -38,28 +38,28 @@ func (c *Cache) Purge() {
 }
 
 // Get looks up a key's value from the cache.
-func (c *Cache) Get(s servers.Service) (servers.Service, error) {
+func (c *Cache) Get(s utils.Service) (utils.Service, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Get(s)
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
-func (c *Cache) Add(s servers.Service) bool {
+func (c *Cache) Add(s utils.Service) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Add(s)
 }
 
 // Set sets the provided key from the cache.
-func (c *Cache) Set(originalValue servers.Service, modifyValue servers.Service) error {
+func (c *Cache) Set(originalValue utils.Service, modifyValue utils.Service) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Set(originalValue, modifyValue)
 }
 
 // Remove removes the provided key from the cache.
-func (c *Cache) Remove(s servers.Service) error {
+func (c *Cache) Remove(s utils.Service) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Remove(s)
@@ -88,7 +88,7 @@ func (c *Cache) Len() int {
 }
 
 //List return all items in the cache.
-func (c *Cache) List() []servers.Service {
+func (c *Cache) List() []utils.Service {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.lru.List()
