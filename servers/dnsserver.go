@@ -12,6 +12,7 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/cache"
 )
 
 // Service represents a container and an attached DNS record
@@ -44,8 +45,8 @@ type DNSServer struct {
 	server     *dns.Server
 	mux        *dns.ServeMux
 	lock       *sync.RWMutex
-	publicDns  *Cache
-	privateDns *Cache
+	publicDns  *cache.Cache
+	privateDns *cache.Cache
 }
 
 // NewDNSServer create a new DNSServer
@@ -80,9 +81,7 @@ func (s *DNSServer) Stop() {
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(service Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
-		defer s.privateDns.Unlock()
-		s.privateDns.Lock()
-		s.services[id] = &service
+		s.privateDns.Add(&service)
 
 		logger.Debugf("Added service: '%s': '%s'.", id, service)
 		logger.Debugf("Handling DNS requests for '%s'.", service.Aliases)
@@ -97,37 +96,28 @@ func (s *DNSServer) AddService(service Service) {
 }
 
 // RemoveService removes a new container and thus DNS records
-func (s *DNSServer) RemoveService(id string) error {
-	defer s.lock.Unlock()
-	s.lock.Lock()
-
-	id = s.getExpandedID(id)
-	if _, ok := s.services[id]; !ok {
-		return errors.New("No such service: " + id)
+func (s *DNSServer) RemoveService(service Service) error {	
+	if err := s.privateDns.Remove(service); err != nil {
+		return err
 	}
 	s.mux.HandleRemove(s.services[id].Aliases + ".")
-
-	delete(s.services, id)
-
-	logger.Debugf("Removeed service '%s'", id)
+	logger.Debugf("Removeed service '%s'", service)
 
 	return nil
 }
 
 // GetService reads a service from the repository
-func (s *DNSServer) GetService(id string) (Service, error) {
-	defer s.lock.RUnlock()
-	s.lock.RLock()
-
-	id = s.getExpandedID(id)
-	if s, ok := s.services[id]; ok {
-		return *s, nil
+func (s *DNSServer) GetService(service Service) (Service, error) {
+	result, err := s.privateDns.Get(service)
+	if err !=nil {
+		return *new(Service), err
 	}
-	// Check for a pa
-	return *new(Service), errors.New("No such service: " + id)
+	return result, err
+
 }
 
 // GetAllServices reads all services from the repository
+/*
 func (s *DNSServer) GetAllServices() map[string]Service {
 	defer s.lock.RUnlock()
 	s.lock.RLock()
@@ -139,6 +129,7 @@ func (s *DNSServer) GetAllServices() map[string]Service {
 
 	return list
 }
+*/
 
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
