@@ -12,10 +12,11 @@ import (
 	"runtime"
 )
 
-type setstruct struct{
+type setstruct struct {
 	originalValue utils.Service
 	modifyValue   utils.Service
 }
+
 // HTTPServer represents the http endpoint
 type HTTPServer struct {
 	config *utils.Config
@@ -84,7 +85,7 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
-	var service utils.Service 
+	var service utils.Service
 	if err := json.NewDecoder(req.Body).Decode(&service); err != nil {
 		logger.Errorf("JSON decoding error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -120,16 +121,16 @@ func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if err := s.validation(result["originalValue"]); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	if err := s.validation(result["modifyValue"]); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// todo: this probably needs to be moved. consider stop event in the
 	// middle of sending PATCH. container would not be removed.
-	if err := s.list.SetService(result["originalValue"],result["modifyValue"]); err != nil {
+	if err := s.list.SetService(result["originalValue"], result["modifyValue"]); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }

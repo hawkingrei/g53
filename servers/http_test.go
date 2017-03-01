@@ -58,7 +58,7 @@ func TestServiceRequests(t *testing.T) {
 		{"PUT", "/service", `{"RecordType":"A","Value":"127.0.0.1","TTL":,"Aliases":"foo.duitang.com."}`, "", 500},
 		{"GET", "/service", `{"RecordType":"A","Value":"127.0.0.1","TTL":0,"Aliases":"foo.duitang.com."}`, `{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Private":true,"Aliases":"foo.duitang.com."}`, 200},
 		{"PATCH", "/service", `{"originalValue":{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"foo.duitang.com."},"modifyValue":abc}`, ``, 500},
-		{"PATCH", "/service", `{"originalValue":abc,"modifyValue":{"RecordType":"A","Value":"127.0.0.10","TTL":3600,"Aliases":"foo.duitang.com."}}`, ``, 500},		
+		{"PATCH", "/service", `{"originalValue":abc,"modifyValue":{"RecordType":"A","Value":"127.0.0.10","TTL":3600,"Aliases":"foo.duitang.com."}}`, ``, 500},
 		{"PATCH", "/service", `{"originalValue":{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"foo.duitang.com."},"modifyValue":{"RecordType":"A","Value":"127.0.0.10","TTL":3600,"Aliases":"foo.duitang.com."}}`, ``, 200},
 		{"GET", "/service", `{"RecordType":"A","Aliases":"foo.duitang.com."}`, `{"RecordType":"A","Value":"127.0.0.10","TTL":3600,"Private":true,"Aliases":"foo.duitang.com."}`, 200},
 		{"DELETE", "/service", `{"RecordType":"A","Value":"127.0.0.10","Aliases":"foo.duitang.com."}`, "", 200},

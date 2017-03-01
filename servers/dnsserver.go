@@ -2,15 +2,14 @@ package servers
 
 import (
 	"net"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/miekg/dns"
 
-	"github.com/hawkingrei/g53/utils"
 	"github.com/hawkingrei/g53/cache"
+	"github.com/hawkingrei/g53/utils"
 )
 
 // NewService creates a new service
@@ -23,7 +22,7 @@ func NewService() (s *utils.Service) {
 type ServiceListProvider interface {
 	AddService(utils.Service)
 	RemoveService(utils.Service) error
-	SetService(utils.Service,utils.Service) error
+	SetService(utils.Service, utils.Service) error
 	GetService(utils.Service) (utils.Service, error)
 	GetAllServices() []utils.Service
 }
@@ -69,8 +68,8 @@ func (s *DNSServer) Stop() {
 	s.server.Shutdown()
 }
 
-func (s *DNSServer) SetService (originalValue utils.Service, modifyValue utils.Service) error {
-	return s.privateDns.Set(originalValue,modifyValue)
+func (s *DNSServer) SetService(originalValue utils.Service, modifyValue utils.Service) error {
+	return s.privateDns.Set(originalValue, modifyValue)
 }
 
 // AddService adds a new container and thus new DNS records
@@ -91,7 +90,7 @@ func (s *DNSServer) AddService(service utils.Service) {
 }
 
 // RemoveService removes a new container and thus DNS records
-func (s *DNSServer) RemoveService(service utils.Service) error {	
+func (s *DNSServer) RemoveService(service utils.Service) error {
 	if err := s.privateDns.Remove(service); err != nil {
 		return err
 	}
@@ -104,7 +103,7 @@ func (s *DNSServer) RemoveService(service utils.Service) error {
 // GetService reads a service from the repository
 func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
 	result, err := s.privateDns.Get(service)
-	if err !=nil {
+	if err != nil {
 		return *new(utils.Service), err
 	}
 	return result, err
@@ -116,7 +115,6 @@ func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
 func (s *DNSServer) GetAllServices() []utils.Service {
 	return s.privateDns.List()
 }
-
 
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
@@ -237,11 +235,10 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if query[len(query)-1] == '.' {
 		query = query[:len(query)-1]
 	}
-	
-	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype] ,"" ,0 ,true ,strings.ToLower(query)})
-	
-	
-	logger.Debugf("DNS record found for query '%s'  '%s'", query,dns.TypeToString[r.Question[0].Qtype])
+
+	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, true, strings.ToLower(query)})
+
+	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
 	for service := range result {
 		var rr dns.RR
 		switch r.Question[0].Qtype {
@@ -271,11 +268,10 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	return
 }
 
-
 func (s *DNSServer) queryServices(service utils.Service) chan *utils.Service {
 	c := make(chan *utils.Service, 10)
 	go func() {
-		result,err := s.privateDns.Get(service)
+		result, err := s.privateDns.Get(service)
 		if err == nil {
 			c <- &result
 		}
@@ -283,7 +279,6 @@ func (s *DNSServer) queryServices(service utils.Service) chan *utils.Service {
 	}()
 	return c
 }
-
 
 // TTL is used from config so that not-found result responses are not cached
 // for a long time. The other defaults left as is(skydns source) because they
@@ -305,8 +300,4 @@ func (s *DNSServer) createSOA() []dns.RR {
 		Minttl:  uint32(s.config.Ttl),
 	}
 	return []dns.RR{soa}
-}
-
-func isPrefixQuery(query, name []string) bool {
-	return reflect.DeepEqual(query, name)
 }
