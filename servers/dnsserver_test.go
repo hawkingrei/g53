@@ -76,7 +76,7 @@ func TestDNSResponse(t *testing.T) {
 	//server.AddService("baz", Service{Name: "baz", Image: "bar", IPs: []net.IP{net.ParseIP("127.0.0.1")}, TTL: -1})
 	//server.AddService("biz", Service{Name: "hey", Image: "", IPs: []net.IP{net.ParseIP("127.0.0.4")}})
 	//server.AddService("joe", Service{Name: "joe", Image: "", IPs: []net.IP{net.ParseIP("127.0.0.5")}, Aliases: []string{"lala.docker", "super-alias", "alias.domain"}})
-	/*
+	
 	var inputs = []struct {
 		query    string
 		expected int
@@ -138,7 +138,7 @@ func TestDNSResponse(t *testing.T) {
 		}
 
 	}
-	*/
+	
 	server.Stop()
 	time.Sleep(250 * time.Millisecond)
 }
@@ -149,7 +149,7 @@ func TestServiceManagement(t *testing.T) {
 	if len(list.GetAllServices()) != 0 {
 		t.Error("Initial service count should be 0.")
 	}
-	/*
+	
 
 	A := utils.Service{Aliases: "bar.duitang.com.", RecordType: "A", TTL: 3600, Value: "127.0.0.1"}
 	list.AddService(A)
@@ -157,10 +157,9 @@ func TestServiceManagement(t *testing.T) {
 	if len(list.GetAllServices()) != 1 {
 		t.Error("Service count should be 1.")
 	}
+	
 
-	A.Aliases = "baz.duitang.com."
-
-	s1, err := list.GetService("bar.duitang.com.")
+	s1, err := list.GetService(A)
 	if err != nil {
 		t.Error("GetService error", err)
 	}
@@ -168,7 +167,7 @@ func TestServiceManagement(t *testing.T) {
 	if s1.Aliases != "bar.duitang.com." {
 		t.Error("Expected: bar got:", s1.Aliases)
 	}
-
+	/*
 	_, err = list.GetService("boo.duitang.com.")
 	if err == nil {
 		t.Error("Request to boo should have failed")
@@ -220,29 +219,5 @@ func TestServiceManagement(t *testing.T) {
 		t.Error("Item count after remove should be 1")
 	}
 	*/
+	
 }
-/*
-func TestGetExpandedID(t *testing.T) {
-	server := NewDNSServer(utils.NewConfig())
-
-	server.AddService(Service{RecordType: "A", TTL: 600, Value: "127.0.0.1", Aliases: "www.416261e74.net."})
-	server.AddService(Service{RecordType: "A", TTL: 600, Value: "127.0.0.1", Aliases: "www.316261e74.net."})
-	server.AddService(Service{RecordType: "A", TTL: 600, Value: "127.0.0.1", Aliases: "www.abcdefabcdef.net."})
-
-	inputs := map[string]string{
-		"416":          "416",
-		"41626":        "416261e74515b7dd1dbd55f35e8625b063044f6ddf74907269e07e9f142bc0df",
-		"416261e74515": "416261e74515b7dd1dbd55f35e8625b063044f6ddf74907269e07e9f142bc0df",
-		"31626":        "31626",
-		"abcde":        "abcde",
-		"foobar":       "foobar",
-	}
-
-	for input, expected := range inputs {
-		if actual := server.getExpandedID(input); actual != expected {
-			t.Error(input, "Expected:", expected, "Got:", actual)
-		}
-	}
-
-}
-*/

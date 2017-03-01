@@ -68,6 +68,12 @@ func TestLRU(t *testing.T) {
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, true, "www.google.com"})
 	fmt.Println("5")
 	l.Purge()
+	l.Add(utils.Service{"MX", "13.0.0.0", 600, true, "www.oschina.com"})
+	if result := l.Set(utils.Service{"MX", "13.0.0.0", 600, true, "www.oschina.com"},
+		utils.Service{"MX", "13.0.0.1", 600, true, "www.oschina.com"}); result != nil {
+		t.Errorf("should get nil")
+	}
+	fmt.Println(l.Get(utils.Service{"MX", "", 600, true, "www.oschina.com"}))
 	l.RemoveOldest()
 	_, err = New(3)
 	if err != nil {

@@ -79,7 +79,7 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
+	result.Private = true
 	json.NewEncoder(w).Encode(result)
 }
 
@@ -90,7 +90,9 @@ func (s *HTTPServer) addService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	logger.Debugf("add service json decode")
 	if err := s.validation(service); err != nil {
+		logger.Errorf("validation error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

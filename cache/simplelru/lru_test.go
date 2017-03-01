@@ -57,17 +57,19 @@ func TestSimleLRU(t *testing.T) {
 	}
 	l.Add(utils.Service{"A", "11.0.0.0", 600, true, "www.google.com"})
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, true, "www.google.com"})
-	fmt.Println("1")
 	l.Remove(utils.Service{"A", "11.0.0.0", 600, true, "www.google.com"})
 	l.Remove(utils.Service{"MX", "www.baidu.com", 600, true, "www.google.com"})
-	fmt.Println("2")
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, true, "www.google.com"})
-	fmt.Println("3")
 	l.Add(utils.Service{"MX", "12.0.0.0", 600, true, "www.google.com"})
-	fmt.Println("4")
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, true, "www.google.com"})
 	l.List()
-	fmt.Println("5")
+	l.Purge()
+	l.Add(utils.Service{"MX", "13.0.0.0", 600, true, "www.oschina.com"})
+	if result := l.Set(utils.Service{"MX", "13.0.0.0", 600, true, "www.oschina.com"},
+		utils.Service{"MX", "13.0.0.1", 600, true, "www.oschina.com"}); result != nil {
+		t.Errorf("should get nil")
+	}
+	fmt.Println(l.Get(utils.Service{"MX", "", 600, true, "www.oschina.com"}))
 	l.Purge()
 	l.RemoveOldest()
 }
