@@ -80,7 +80,6 @@ func (s *HTTPServer) getService(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	result.Private = true
 	json.NewEncoder(w).Encode(result)
 }
 

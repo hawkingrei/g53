@@ -106,8 +106,7 @@ func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
 	if err != nil {
 		return *new(utils.Service), err
 	}
-	return result, err
-
+	return utils.EntryToServer(result), err
 }
 
 // GetAllServices reads all services from the repository
@@ -151,7 +150,7 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func (s *DNSServer) makeServiceCNAME(n string, service *utils.Service) dns.RR {
+func (s *DNSServer) makeServiceCNAME(n string, service utils.Service) dns.RR {
 	rr := new(dns.CNAME)
 
 	var ttl int
@@ -179,7 +178,7 @@ func (s *DNSServer) makeServiceCNAME(n string, service *utils.Service) dns.RR {
 	return rr
 }
 
-func (s *DNSServer) makeServiceA(n string, service *utils.Service) dns.RR {
+func (s *DNSServer) makeServiceA(n string, service utils.Service) dns.RR {
 	rr := new(dns.A)
 
 	var ttl int
@@ -236,16 +235,16 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 		query = query[:len(query)-1]
 	}
 
-	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, true, strings.ToLower(query)})
+	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, strings.ToLower(query)})
 
 	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
 	for service := range result {
 		var rr dns.RR
 		switch r.Question[0].Qtype {
 		case dns.TypeA:
-			rr = s.makeServiceA(r.Question[0].Name, service)
+			rr = s.makeServiceA(r.Question[0].Name, utils.EntryToServer(service))
 		case dns.TypeCNAME:
-			rr = s.makeServiceCNAME(r.Question[0].Name, service)
+			rr = s.makeServiceCNAME(r.Question[0].Name, utils.EntryToServer(service))
 		default:
 			// this query type isn't supported, but we do have
 			// a record with this name. Per RFC 4074 sec. 3, we
@@ -268,12 +267,12 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	return
 }
 
-func (s *DNSServer) queryServices(service utils.Service) chan *utils.Service {
-	c := make(chan *utils.Service, 10)
+func (s *DNSServer) queryServices(service utils.Service) chan *utils.Entry {
+	c := make(chan *utils.Entry, 10)
 	go func() {
 		result, err := s.privateDns.Get(service)
 		if err == nil {
-			c <- &result
+			c <- result
 		}
 		close(c)
 	}()
