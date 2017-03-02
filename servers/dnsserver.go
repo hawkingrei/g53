@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"github.com/miekg/dns"
 
 	"github.com/hawkingrei/g53/cache"
@@ -75,6 +74,14 @@ func (s *DNSServer) SetService(originalValue utils.Service, modifyValue utils.Se
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(service utils.Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
+		if  string(service.Aliases[len(service.Aliases)-1]) != "." {
+			service.Aliases = string(service.Aliases) + "."
+		}
+
+		if service.RecordType == "CNAME" && string(service.Value[len(service.Value)-1]) != "." {
+			service.Value = string(service.Value) + "."
+		}
+
 		s.privateDns.Add(service)
 
 		logger.Debugf("Added service: '%s'.", service)
@@ -84,6 +91,7 @@ func (s *DNSServer) AddService(service utils.Service) {
 		//	logger.Debugf("Handling DNS requests for '%s'.", alias)
 		//	s.mux.HandleFunc(alias+".", s.handleRequest)
 		//}
+		
 	} else {
 		logger.Warningf("Service '%s' ignored: No RecordType provided:", service)
 	}
@@ -171,7 +179,7 @@ func (s *DNSServer) makeServiceCNAME(n string, service utils.Service) dns.RR {
 		if len(service.Value) > 1 {
 			logger.Warningf("Multiple IP address found for container '%s'. Only the first address will be used", service.Aliases)
 		}
-		rr.Target = service.Value + "."
+		rr.Target = service.Value
 	} else {
 		logger.Errorf("No valid IP address found for container '%s' at makeServiceCNAME", service.Aliases)
 	}
@@ -231,13 +239,11 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	query := r.Question[0].Name
 
 	// trim off any trailing dot
-	if query[len(query)-1] == '.' {
-		query = query[:len(query)-1]
+	if query[len(query)-1] != '.' {
+		query = query + "."
 	}
-
-	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, strings.ToLower(query)})
-
 	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
+	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, strings.ToLower(query)})
 	for service := range result {
 		var rr dns.RR
 		switch r.Question[0].Qtype {
@@ -273,6 +279,8 @@ func (s *DNSServer) queryServices(service utils.Service) chan *utils.Entry {
 		result, err := s.privateDns.Get(service)
 		if err == nil {
 			c <- result
+		} else {
+			logger.Debugf(err.Error())
 		}
 		close(c)
 	}()
