@@ -12,7 +12,7 @@ func TestDNSError(t *testing.T) {
 
 	config := utils.NewConfig()
 	config.DnsAddr = TestAddr
-	config.Nameservers = []string{"123.123.123.123:53","123.321.123.321:53"}
+	config.Nameservers = []string{"123.123.123.123:53", "123.321.123.321:53"}
 
 	server := NewDNSServer(config)
 	go server.Start()
@@ -83,7 +83,7 @@ func TestDNSResponse(t *testing.T) {
 		expected int
 		qType    string
 		rcode    int
-	}{	
+	}{
 		{"hawkingreirrrr.com.", 0, "A", dns.RcodeNameError},
 		{"google.com.", -1, "A", dns.RcodeSuccess},
 		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
