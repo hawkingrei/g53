@@ -83,7 +83,7 @@ func TestDNSResponse(t *testing.T) {
 		expected int
 		qType    string
 		rcode    int
-	}{	
+	}{
 		{"hawkingreirrrr.com.", 0, "A", dns.RcodeNameError},
 		{"hawkingreirrrr.com.", 0, "SOA", dns.RcodeSuccess},
 		{"google.com.", -1, "A", dns.RcodeSuccess},

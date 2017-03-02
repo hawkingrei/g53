@@ -1,11 +1,11 @@
 package servers
 
 import (
+	"github.com/miekg/dns"
 	"net"
 	"strings"
 	"sync"
 	"time"
-	"github.com/miekg/dns"
 
 	"github.com/hawkingrei/g53/cache"
 	"github.com/hawkingrei/g53/utils"
@@ -74,7 +74,7 @@ func (s *DNSServer) SetService(originalValue utils.Service, modifyValue utils.Se
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(service utils.Service) {
 	if service.RecordType == "CNAME" || service.RecordType == "A" {
-		if  string(service.Aliases[len(service.Aliases)-1]) != "." {
+		if string(service.Aliases[len(service.Aliases)-1]) != "." {
 			service.Aliases = string(service.Aliases) + "."
 		}
 
@@ -91,7 +91,7 @@ func (s *DNSServer) AddService(service utils.Service) {
 		//	logger.Debugf("Handling DNS requests for '%s'.", alias)
 		//	s.mux.HandleFunc(alias+".", s.handleRequest)
 		//}
-		
+
 	} else {
 		logger.Warningf("Service '%s' ignored: No RecordType provided:", service)
 	}
