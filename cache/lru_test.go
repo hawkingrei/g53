@@ -19,10 +19,10 @@ func TestLRU(t *testing.T) {
 	l.Get(utils.Service{"A", "", 0, "www.google.com"})
 	l.Remove(utils.Service{"A", "", 0, "www.google.com"})
 	l.Get(utils.Service{"A", "", 0, "www.google.com"})
-	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.google.com"}); (*tmp != utils.Entry{}) {
+	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.google.com"}); len(tmp) != 0 {
 		t.Errorf("not get nil")
 	}
-	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.taobao.com"}); (*tmp != utils.Entry{}) {
+	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.taobao.com"}); len(tmp) != 0 {
 		t.Errorf("not get nil")
 	}
 	fmt.Println(l.Keys())

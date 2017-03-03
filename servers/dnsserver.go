@@ -4,7 +4,6 @@ import (
 	"github.com/miekg/dns"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/hawkingrei/g53/cache"
@@ -22,7 +21,7 @@ type ServiceListProvider interface {
 	AddService(utils.Service)
 	RemoveService(utils.Service) error
 	SetService(utils.Service, utils.Service) error
-	GetService(utils.Service) (utils.Service, error)
+	GetService(utils.Service) ([]utils.Service, error)
 	GetAllServices() []utils.Service
 }
 
@@ -31,7 +30,6 @@ type DNSServer struct {
 	config     *utils.Config
 	server     *dns.Server
 	mux        *dns.ServeMux
-	lock       *sync.RWMutex
 	publicDns  *cache.Cache
 	privateDns *cache.Cache
 }
@@ -42,7 +40,6 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 	privateDns, _ := cache.New(100000000)
 	s := &DNSServer{
 		config:     c,
-		lock:       &sync.RWMutex{},
 		publicDns:  publicDns,
 		privateDns: privateDns,
 	}
@@ -109,12 +106,12 @@ func (s *DNSServer) RemoveService(service utils.Service) error {
 }
 
 // GetService reads a service from the repository
-func (s *DNSServer) GetService(service utils.Service) (utils.Service, error) {
+func (s *DNSServer) GetService(service utils.Service) ([]utils.Service, error) {
 	result, err := s.privateDns.Get(service)
 	if err != nil {
-		return *new(utils.Service), err
+		return *new([]utils.Service), err
 	}
-	return utils.EntryToServer(result), err
+	return utils.BatchEntryToServer(&result), err
 }
 
 // GetAllServices reads all services from the repository
@@ -244,24 +241,26 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
 	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, strings.ToLower(query)})
-	for service := range result {
-		var rr dns.RR
-		switch r.Question[0].Qtype {
-		case dns.TypeA:
-			rr = s.makeServiceA(r.Question[0].Name, utils.EntryToServer(service))
-		case dns.TypeCNAME:
-			rr = s.makeServiceCNAME(r.Question[0].Name, utils.EntryToServer(service))
-		default:
-			// this query type isn't supported, but we do have
-			// a record with this name. Per RFC 4074 sec. 3, we
-			// immediately return an empty NOERROR reply.
-			m.Ns = s.createSOA()
-			m.MsgHdr.Authoritative = true
-			w.WriteMsg(m)
-			return
-		}
+	for services := range result {
+		for i := range services {
+			var rr dns.RR
+			switch r.Question[0].Qtype {
+			case dns.TypeA:
+				rr = s.makeServiceA(r.Question[0].Name, utils.EntryToServer(&services[i]))
+			case dns.TypeCNAME:
+				rr = s.makeServiceCNAME(r.Question[0].Name, utils.EntryToServer(&services[i]))
+			default:
+				// this query type isn't supported, but we do have
+				// a record with this name. Per RFC 4074 sec. 3, we
+				// immediately return an empty NOERROR reply.
+				m.Ns = s.createSOA()
+				m.MsgHdr.Authoritative = true
+				w.WriteMsg(m)
+				return
+			}
+			m.Answer = append(m.Answer, rr)
 
-		m.Answer = append(m.Answer, rr)
+		}
 	}
 
 	// We didn't find a record corresponding to the query
@@ -273,11 +272,12 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	return
 }
 
-func (s *DNSServer) queryServices(service utils.Service) chan *utils.Entry {
-	c := make(chan *utils.Entry, 10)
+func (s *DNSServer) queryServices(service utils.Service) chan []utils.Entry {
+	c := make(chan []utils.Entry, 10)
 	go func() {
 		result, err := s.privateDns.Get(service)
 		if err == nil {
+			logger.Debugf("get the number of records: ", len(result))
 			c <- result
 		} else {
 			logger.Debugf(err.Error())

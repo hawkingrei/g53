@@ -164,10 +164,14 @@ func TestServiceManagement(t *testing.T) {
 	if err != nil {
 		t.Error("GetService error", err)
 	}
-
-	if s1.Aliases != "bar.duitang.com." {
-		t.Error("Expected: bar got:", s1.Aliases)
+	if len(s1) == 1 {
+		if s1[0].Aliases != "bar.duitang.com." {
+			t.Error("Expected: bar.duitang.com. got:", s1[0].Aliases)
+		}
+	} else {
+		t.Error("Expected: bar.duitang.com. got:", s1)
 	}
+
 	/*
 		_, err = list.GetService("boo.duitang.com.")
 		if err == nil {

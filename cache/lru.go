@@ -38,7 +38,7 @@ func (c *Cache) Purge() {
 }
 
 // Get looks up a key's value from the cache.
-func (c *Cache) Get(s utils.Service) (*utils.Entry, error) {
+func (c *Cache) Get(s utils.Service) ([]utils.Entry, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.lru.Get(s)

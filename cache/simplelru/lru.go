@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"errors"
 	"github.com/hawkingrei/g53/utils"
-	"math/rand"
 	"reflect"
 	"time"
 )
@@ -78,7 +77,7 @@ func (c *LRU) Add(s utils.Service) bool {
 			Records := &Record{make([]*list.Element, 0)}
 			elements.table[s.RecordType] = Records
 		}
-		content := &utils.Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+		content := &utils.Entry{s.RecordType, s.Value, s.TTL, s.Aliases, time.Now()}
 		elements.table[s.RecordType].list = append(elements.table[s.RecordType].list, c.evictList.PushFront(content))
 	} else {
 		c.addNew(s)
@@ -91,16 +90,20 @@ func (c *LRU) Add(s utils.Service) bool {
 }
 
 // Get looks up a key's value from the cache.
-func (c *LRU) Get(s utils.Service) (*utils.Entry, error) {
+func (c *LRU) Get(s utils.Service) ([]utils.Entry, error) {
+	result := []utils.Entry{}
 	element := c.items[s.Aliases]
 	if element == nil {
-		return &utils.Entry{}, errors.New("Not exist")
+		return []utils.Entry{}, errors.New("Not exist")
 	}
 	record := element.table[s.RecordType]
 	if record == nil {
-		return &utils.Entry{}, errors.New("Not exist")
+		return []utils.Entry{}, errors.New("Not exist")
 	}
-	return (record.list[rand.Intn(len(record.list))].Value.(*utils.Entry)), nil
+	for v := 0; v < len(record.list); v++ {
+		result = append(result, utils.EntryPointerToEntry(record.list[v].Value.(*utils.Entry)))
+	}
+	return result, nil
 }
 
 // Check if a key is in the cache, without updating the recent-ness
@@ -148,7 +151,7 @@ func (c *LRU) Len() int {
 }
 
 func (c *LRU) addNew(s utils.Service) {
-	entries := &utils.Entry{s.Aliases, s.RecordType, s.Value, s.TTL, time.Now()}
+	entries := &utils.Entry{s.RecordType, s.Value, s.TTL, s.Aliases, time.Now()}
 	newRecord := &Record{make([]*list.Element, 0)}
 	(*newRecord).list = append((*newRecord).list, c.evictList.PushFront(entries))
 	newRecords := &Records{table: make(map[string]*Record)}

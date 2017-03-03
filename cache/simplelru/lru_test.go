@@ -20,10 +20,10 @@ func TestSimleLRU(t *testing.T) {
 	l.Remove(utils.Service{"A", "", 0, "www.google.com"})
 	l.Get(utils.Service{"A", "", 0, "www.google.com"})
 	fmt.Println(l.Contains("www.google.com"))
-	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.google.com"}); (*tmp != utils.Entry{}) {
+	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.google.com"}); len(tmp) != 0 {
 		t.Errorf("not get nil")
 	}
-	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.taobao.com"}); (*tmp != utils.Entry{}) {
+	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.taobao.com"}); len(tmp) != 0 {
 		t.Errorf("not get nil")
 	}
 	fmt.Println(l.Keys())
@@ -62,13 +62,14 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "12.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.google.com"})
-	l.List()
+	fmt.Println(l.List())
 	l.Purge()
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.oschina.com"})
 	if result := l.Set(utils.Service{"MX", "13.0.0.0", 600, "www.oschina.com"},
 		utils.Service{"MX", "13.0.0.1", 600, "www.oschina.com"}); result != nil {
 		t.Errorf("should get nil")
 	}
+	fmt.Println(l.List())
 	fmt.Println(l.Get(utils.Service{"MX", "", 600, "www.oschina.com"}))
 	l.Purge()
 	l.RemoveOldest()

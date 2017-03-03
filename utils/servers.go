@@ -14,13 +14,27 @@ type Service struct {
 }
 
 type Entry struct {
-	Aliases    string
 	RecordType string
 	Value      string
 	TTL        int
+	Aliases    string
 	Time       time.Time
 }
 
 func EntryToServer(s *Entry) Service {
 	return Service{(*s).RecordType, (*s).Value, (*s).TTL, (*s).Aliases}
+}
+
+func entryToServer(s Entry) Service {
+	return Service{s.RecordType, s.Value, s.TTL, s.Aliases}
+}
+func BatchEntryToServer(s *[]Entry) []Service {
+	result := []Service{}
+	for v := 0; v < len(*s); v++ {
+		result = append(result, entryToServer((*s)[v]))
+	}
+	return result
+}
+func EntryPointerToEntry(s *Entry) Entry {
+	return Entry{(*s).RecordType, (*s).Value, (*s).TTL, (*s).Aliases, (*s).Time}
 }
