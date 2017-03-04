@@ -157,7 +157,6 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 
 func (s *DNSServer) makeServiceCNAME(n string, service utils.Service) dns.RR {
 	rr := new(dns.CNAME)
-
 	var ttl int
 	if service.TTL != -1 {
 		ttl = service.TTL
@@ -171,21 +170,12 @@ func (s *DNSServer) makeServiceCNAME(n string, service utils.Service) dns.RR {
 		Class:  dns.ClassINET,
 		Ttl:    uint32(ttl),
 	}
-
-	if len(service.Value) != 0 {
-		if len(service.Value) > 1 {
-			logger.Warningf("Multiple IP address found for container '%s'. Only the first address will be used", service.Aliases)
-		}
-		rr.Target = service.Value
-	} else {
-		logger.Errorf("No valid IP address found for container '%s' at makeServiceCNAME", service.Aliases)
-	}
+	rr.Target = service.Value
 	return rr
 }
 
 func (s *DNSServer) makeServiceA(n string, service utils.Service) dns.RR {
 	rr := new(dns.A)
-
 	var ttl int
 	if service.TTL != -1 {
 		ttl = service.TTL
@@ -199,16 +189,7 @@ func (s *DNSServer) makeServiceA(n string, service utils.Service) dns.RR {
 		Class:  dns.ClassINET,
 		Ttl:    uint32(ttl),
 	}
-
-	if len(service.Value) != 0 {
-		if len(service.Value) > 1 {
-			logger.Warningf("Multiple IP address found for container '%s'. Only the first address will be used", service.Aliases)
-		}
-		rr.A = net.ParseIP(service.Value)
-	} else {
-		logger.Errorf("No valid IP address found for container '%s' at makeServiceA", service.Aliases)
-	}
-
+	rr.A = net.ParseIP(service.Value)
 	return rr
 }
 
