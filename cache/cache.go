@@ -239,3 +239,4 @@ func (c *MemoryQuestionCache) Length() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.Backend)
+}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hawkingrei/g53/cache"
+	"github.com/hawkingrei/g53/storage"
 	"github.com/hawkingrei/g53/utils"
 )
 
@@ -30,7 +30,7 @@ type DNSServer struct {
 	config     *utils.Config
 	server     *dns.Server
 	mux        *dns.ServeMux
-	publicDns  *cache.Cache
+	publicDns  *storage.Cache
 	privateDns *cache.Cache
 }
 
