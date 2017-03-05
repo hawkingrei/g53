@@ -35,6 +35,7 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"MX", "www.baidu.com", 600, "www.google.com"})
+	fmt.Println(l.List())
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "12.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.google.com"})
@@ -44,8 +45,8 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"A", "10.0.0.2", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "10.0.0.3", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "10.0.0.4", 600, "www.google.com"})
-	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.google.com"}, utils.Service{"A", "12.0.0.1", 600, "www.google.com"}); result != nil {
-		t.Errorf("should be nil")
+	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.google.com"}, utils.Service{"A", "12.0.0.1", 600, "www.google.com"}); result == nil {
+		t.Errorf("should not be nil")
 	}
 	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.renren.com"},
 		utils.Service{"A", "10.0.0.4", 600, "www.renren.com"}); result == nil {
@@ -55,6 +56,7 @@ func TestSimleLRU(t *testing.T) {
 		utils.Service{"A", "12.0.0.5", 600, "www.google.com"}); result == nil {
 		t.Errorf("not get nil")
 	}
+	l.Add(utils.Service{"AAAA", "2404:6800:4008:c06::63", 600, "www.google.com"})	
 	l.Add(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})
