@@ -46,6 +46,7 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"A", "10.0.0.3", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "10.0.0.4", 600, "www.google.com"})
 	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.google.com"}, utils.Service{"A", "12.0.0.1", 600, "www.google.com"}); result != nil {
+		fmt.Println(err.Error())
 		t.Errorf("should be nil")
 	}
 	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.renren.com"},
