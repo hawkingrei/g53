@@ -35,6 +35,7 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"MX", "www.baidu.com", 600, "www.google.com"})
+	fmt.Println(l.List())
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "12.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.google.com"})
