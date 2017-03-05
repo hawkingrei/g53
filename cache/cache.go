@@ -1,242 +1,111 @@
 package cache
 
 import (
-	"crypto/md5"
-	"fmt"
-	"strings"
 	"sync"
-	"time"
 
-	"github.com/miekg/dns"
+	"github.com/hawkingrei/g53/cache/simplelru"
 )
 
-// KeyNotFound type
-type KeyNotFound struct {
-	key string
+// Cache is a thread-safe fixed size LRU cache.
+type Cache struct {
+	lru  *simplelru.LRU
+	lock sync.RWMutex
 }
 
-// Error formats an error for the KeyNotFound type
-func (e KeyNotFound) Error() string {
-	return e.key + " " + "not found"
+// New creates an LRU of the given size
+func New(size int) (*Cache, error) {
+	return NewWithEvict(size, nil)
 }
 
-// KeyExpired type
-type KeyExpired struct {
-	Key string
-}
-
-// Error formats an error for the KeyExpired type
-func (e KeyExpired) Error() string {
-	return e.Key + " " + "expired"
-}
-
-// CacheIsFull type
-type CacheIsFull struct {
-}
-
-// Error formats an error for the CacheIsFull type
-func (e CacheIsFull) Error() string {
-	return "Cache is Full"
-}
-
-// SerializerError type
-type SerializerError struct {
-}
-
-// Error formats an error for the SerializerError type
-func (e SerializerError) Error() string {
-	return "Serializer error"
-}
-
-// Mesg represents a cache entry
-type Mesg struct {
-	Msg     *dns.Msg
-	Blocked bool
-	Expire  time.Time
-}
-
-// Cache interface
-type Cache interface {
-	Get(key string) (Msg *dns.Msg, blocked bool, err error)
-	Set(key string, Msg *dns.Msg, blocked bool) error
-	Exists(key string) bool
-	Remove(key string)
-	Length() int
-}
-
-// MemoryCache type
-type MemoryCache struct {
-	Backend  map[string]Mesg
-	Expire   time.Duration
-	Maxcount int
-	mu       sync.RWMutex
-}
-
-// MemoryBlockCache type
-type MemoryBlockCache struct {
-	Backend map[string]bool
-	mu      sync.RWMutex
-}
-
-// MemoryQuestionCache type
-type MemoryQuestionCache struct {
-	Backend  []QuestionCacheEntry `json:"entry"`
-	Maxcount int
-	mu       sync.RWMutex
-}
-
-// Get returns the entry for a key or an error
-func (c *MemoryCache) Get(key string) (*dns.Msg, bool, error) {
-	key = strings.ToLower(key)
-
-	c.mu.RLock()
-	mesg, ok := c.Backend[key]
-	c.mu.RUnlock()
-
-	if !ok {
-		return nil, false, KeyNotFound{key}
+// NewWithEvict constructs a fixed size cache with the given eviction
+// callback.
+func NewWithEvict(size int, onEvicted func(key interface{}, value interface{})) (*Cache, error) {
+	lru, err := simplelru.NewLRU(size, simplelru.EvictCallback(onEvicted))
+	if err != nil {
+		return nil, err
 	}
-
-	if mesg.Expire.Before(time.Now()) {
-		c.Remove(key)
-		return nil, false, KeyExpired{key}
+	c := &Cache{
+		lru: lru,
 	}
-
-	return mesg.Msg, mesg.Blocked, nil
+	return c, nil
 }
 
-// Set sets a keys value to a Mesg
-func (c *MemoryCache) Set(key string, msg *dns.Msg, blocked bool) error {
-	key = strings.ToLower(key)
+// Purge is used to completely clear the cache
+func (c *Cache) Purge() {
+	c.lock.Lock()
+	c.lru.Purge()
+	c.lock.Unlock()
+}
 
-	if c.Full() && !c.Exists(key) {
-		return CacheIsFull{}
+// Add adds a value to the cache.  Returns true if an eviction occurred.
+func (c *Cache) Add(key, value interface{}) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.lru.Add(key, value)
+}
+
+// Get looks up a key's value from the cache.
+func (c *Cache) Get(key interface{}) (interface{}, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.lru.Get(key)
+}
+
+// Check if a key is in the cache, without updating the recent-ness
+// or deleting it for being stale.
+func (c *Cache) Contains(key interface{}) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Contains(key)
+}
+
+// Returns the key value (or undefined if not found) without updating
+// the "recently used"-ness of the key.
+func (c *Cache) Peek(key interface{}) (interface{}, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Peek(key)
+}
+
+// ContainsOrAdd checks if a key is in the cache  without updating the
+// recent-ness or deleting it for being stale,  and if not, adds the value.
+// Returns whether found and whether an eviction occurred.
+func (c *Cache) ContainsOrAdd(key, value interface{}) (ok, evict bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.lru.Contains(key) {
+		return true, false
+	} else {
+		evict := c.lru.Add(key, value)
+		return false, evict
 	}
-
-	expire := time.Now().Add(c.Expire)
-	mesg := Mesg{msg, blocked, expire}
-	c.mu.Lock()
-	c.Backend[key] = mesg
-	c.mu.Unlock()
-
-	return nil
 }
 
-// Remove removes an entry from the cache
-func (c *MemoryCache) Remove(key string) {
-	key = strings.ToLower(key)
-
-	c.mu.Lock()
-	delete(c.Backend, key)
-	c.mu.Unlock()
+// Remove removes the provided key from the cache.
+func (c *Cache) Remove(key interface{}) {
+	c.lock.Lock()
+	c.lru.Remove(key)
+	c.lock.Unlock()
 }
 
-// Exists returns whether or not a key exists in the cache
-func (c *MemoryCache) Exists(key string) bool {
-	key = strings.ToLower(key)
-
-	c.mu.RLock()
-	_, ok := c.Backend[key]
-	c.mu.RUnlock()
-	return ok
+// RemoveOldest removes the oldest item from the cache.
+func (c *Cache) RemoveOldest() {
+	c.lock.Lock()
+	c.lru.RemoveOldest()
+	c.lock.Unlock()
 }
 
-// Length returns the caches length
-func (c *MemoryCache) Length() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.Backend)
+// Keys returns a slice of the keys in the cache, from oldest to newest.
+func (c *Cache) Keys() []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Keys()
 }
 
-// Full returns whether or not the cache is full
-func (c *MemoryCache) Full() bool {
-	if c.Maxcount == 0 {
-		return false
-	}
-	return c.Length() >= c.Maxcount
-}
-
-// KeyGen generates a key for the hash from a question
-func KeyGen(q Question) string {
-	h := md5.New()
-	h.Write([]byte(q.String()))
-	x := h.Sum(nil)
-	key := fmt.Sprintf("%x", x)
-	return key
-}
-
-// Get returns the entry for a key or an error
-func (c *MemoryBlockCache) Get(key string) (bool, error) {
-	key = strings.ToLower(key)
-
-	c.mu.RLock()
-	val, ok := c.Backend[key]
-	c.mu.RUnlock()
-
-	if !ok {
-		return false, KeyNotFound{key}
-	}
-
-	return val, nil
-}
-
-// Remove removes an entry from the cache
-func (c *MemoryBlockCache) Remove(key string) {
-	key = strings.ToLower(key)
-
-	c.mu.Lock()
-	delete(c.Backend, key)
-	c.mu.Unlock()
-}
-
-// Set sets a value in the BlockCache
-func (c *MemoryBlockCache) Set(key string, value bool) error {
-	key = strings.ToLower(key)
-
-	c.mu.Lock()
-	c.Backend[key] = value
-	c.mu.Unlock()
-
-	return nil
-}
-
-// Exists returns whether or not a key exists in the cache
-func (c *MemoryBlockCache) Exists(key string) bool {
-	key = strings.ToLower(key)
-
-	c.mu.RLock()
-	_, ok := c.Backend[key]
-	c.mu.RUnlock()
-	return ok
-}
-
-// Length returns the caches length
-func (c *MemoryBlockCache) Length() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.Backend)
-}
-
-// Add adds a question to the cache
-func (c *MemoryQuestionCache) Add(q QuestionCacheEntry) {
-	c.mu.Lock()
-	if c.Maxcount != 0 && len(c.Backend) >= c.Maxcount {
-		c.Backend = nil
-	}
-	c.Backend = append(c.Backend, q)
-	c.mu.Unlock()
-}
-
-// Clear clears the contents of the cache
-func (c *MemoryQuestionCache) Clear() {
-	c.mu.Lock()
-	c.Backend = nil
-	c.mu.Unlock()
-}
-
-// Length returns the caches length
-func (c *MemoryQuestionCache) Length() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.Backend)
+// Len returns the number of items in the cache.
+func (c *Cache) Len() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Len()
 }
