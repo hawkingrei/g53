@@ -1,7 +1,7 @@
-package cache
+package storage
 
 import (
-	"github.com/hawkingrei/g53/cache/simplelru"
+	"github.com/hawkingrei/g53/storage/simplelru"
 	"github.com/hawkingrei/g53/utils"
 	"sync"
 )
