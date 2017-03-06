@@ -30,13 +30,13 @@ type DNSServer struct {
 	config     *utils.Config
 	server     *dns.Server
 	mux        *dns.ServeMux
-	publicDns  *cache.Cache
+	publicDns  *cache.MsgCache
 	privateDns *cache.Cache
 }
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
-	publicDns, _ := cache.New(10000)
+	publicDns, _ := cache.NewMsgCache(10000)
 	privateDns, _ := cache.New(100000000)
 	s := &DNSServer{
 		config:     c,
@@ -120,6 +120,11 @@ func (s *DNSServer) GetAllServices() []utils.Service {
 	return s.privateDns.List()
 }
 
+//func (s *DNSServer) queryDnsCache(r *dns.Msg) (r Msg,error){
+//	name := r.Question[0].Name
+//	recordType := dns.TypeToString[r.Question[0].Qtype]
+//}
+
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
 	logger.Debugf("Using DNS forwarding for '%s'", r.Question[0].Name)
@@ -128,6 +133,11 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	// Otherwise just forward the request to another server
 	c := new(dns.Client)
 	c.UDPSize = uint16(4096)
+
+	//if result, err  s.queryDnsCache(r) ; err == nil {
+	//	w.WriteMsg(in)
+	//	return
+	//}
 
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {

@@ -1,4 +1,4 @@
-	package simplelru
+package simplelru
 
 import (
 	"fmt"
@@ -56,7 +56,7 @@ func TestSimleLRU(t *testing.T) {
 		utils.Service{"A", "12.0.0.5", 600, "www.google.com"}); result == nil {
 		t.Errorf("not get nil")
 	}
-	l.Add(utils.Service{"AAAA", "2404:6800:4008:c06::63", 600, "www.google.com"})	
+	l.Add(utils.Service{"AAAA", "2404:6800:4008:c06::63", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})
 	l.Add(utils.Service{"MX", "11.0.0.0", 600, "www.google.com"})
 	l.Remove(utils.Service{"A", "11.0.0.0", 600, "www.google.com"})

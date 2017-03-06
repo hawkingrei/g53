@@ -74,7 +74,7 @@ func (c *LRU) Set(originalValue utils.Service, modifyValue utils.Service) error 
 func (c *LRU) Add(s utils.Service) bool {
 	if elements := c.items[s.Aliases]; elements != nil {
 		if element := elements.table[s.RecordType]; element == nil {
-			if len(elements.table)  == 0 {
+			if len(elements.table) == 0 {
 				Records := &Record{make([]*list.Element, 0)}
 				elements.table[s.RecordType] = Records
 			} else {
@@ -90,6 +90,7 @@ func (c *LRU) Add(s utils.Service) bool {
 		}
 		content := &utils.Entry{s.RecordType, s.Value, s.TTL, s.Aliases, time.Now()}
 		elements.table[s.RecordType].list = append(elements.table[s.RecordType].list, c.evictList.PushFront(content))
+		c.size = c.size + 1
 	} else {
 		c.addNew(s)
 	}
