@@ -79,11 +79,11 @@ func (c *LRU) Add(s utils.Service) bool {
 				elements.table[s.RecordType] = Records
 			} else {
 				for rt := range elements.table {
-					if (rt == "A" || rt == "AAAA") && (s.RecordType == "A" || s.RecordType == "AAAA") {
+					if (rt == "A" || rt == "AAAA") && (s.RecordType == "CNAME") {
+						return false
+					} else {
 						Records := &Record{make([]*list.Element, 0)}
 						elements.table[s.RecordType] = Records
-					} else {
-						return false
 					}
 				}
 			}

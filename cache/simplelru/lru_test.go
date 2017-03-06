@@ -1,4 +1,4 @@
-package simplelru
+	package simplelru
 
 import (
 	"fmt"
@@ -45,8 +45,8 @@ func TestSimleLRU(t *testing.T) {
 	l.Add(utils.Service{"A", "10.0.0.2", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "10.0.0.3", 600, "www.google.com"})
 	l.Add(utils.Service{"A", "10.0.0.4", 600, "www.google.com"})
-	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.google.com"}, utils.Service{"A", "12.0.0.1", 600, "www.google.com"}); result == nil {
-		t.Errorf("should not be nil")
+	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.google.com"}, utils.Service{"A", "12.0.0.1", 600, "www.google.com"}); result != nil {
+		t.Errorf("should be nil")
 	}
 	if result := l.Set(utils.Service{"A", "10.0.0.4", 600, "www.renren.com"},
 		utils.Service{"A", "10.0.0.4", 600, "www.renren.com"}); result == nil {
