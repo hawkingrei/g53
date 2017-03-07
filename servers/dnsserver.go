@@ -120,10 +120,25 @@ func (s *DNSServer) GetAllServices() []utils.Service {
 	return s.privateDns.List()
 }
 
-//func (s *DNSServer) queryDnsCache(r *dns.Msg) (r Msg,error){
-//	name := r.Question[0].Name
-//	recordType := dns.TypeToString[r.Question[0].Qtype]
-//}
+func (s *DNSServer) queryDnsCache(r *dns.Msg) (*dns.Msg, error) {
+	m := new(dns.Msg)
+	m.Compress = true
+	m.SetReply(r)
+	m.RecursionAvailable = true
+
+	name := r.Question[0].Name
+	recordType := r.Question[0].Qtype
+	result, err := s.publicDns.Get(name, recordType)
+	if err != nil {
+		return m, err
+	}
+	for v := 0; v < len(result); v++ {
+		m.Answer = append(m.Answer, result[v])
+	}
+
+	return m, nil
+
+}
 
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
@@ -134,10 +149,11 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	c := new(dns.Client)
 	c.UDPSize = uint16(4096)
 
-	//if result, err  s.queryDnsCache(r) ; err == nil {
-	//	w.WriteMsg(in)
-	//	return
-	//}
+	if result, err := s.queryDnsCache(r); err == nil {
+		logger.Debugf("Hit Public Cache")
+		w.WriteMsg(result)
+		return
+	}
 
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
@@ -145,6 +161,10 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 
 		in, _, err := c.Exchange(r, s.config.Nameservers[i])
 		if err == nil {
+			if len(in.Answer) != 0 {
+				logger.Debugf("Cache answer")
+				s.publicDns.Add(in.Answer)
+			}
 			w.WriteMsg(in)
 			return
 		}

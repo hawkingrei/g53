@@ -51,6 +51,9 @@ func (c *LRU) Purge() {
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
 func (c *LRU) Add(s []dns.RR) bool {
+	if len(s) == 0 {
+		return false
+	}
 	rrtype := s[0].Header().Rrtype
 	name := s[0].Header().Name
 	if elements := c.items[name]; elements != nil {
@@ -72,7 +75,7 @@ func (c *LRU) Add(s []dns.RR) bool {
 				}
 			}
 		}
-		elements.table[rrtype].list = c.evictList.PushFront(s)
+		elements.table[rrtype].list = c.evictList.PushFront(&s)
 		elements.table[rrtype].Time = time.Now()
 	} else {
 		c.addNew(s)
@@ -84,17 +87,29 @@ func (c *LRU) Add(s []dns.RR) bool {
 	return evict
 }
 
+func (c *LRU) addNew(s []dns.RR) {
+	rrtype := s[0].Header().Rrtype
+	name := s[0].Header().Name
+	entries := &s
+	newRecord := &Record{}
+	(*newRecord).list = c.evictList.PushFront(entries)
+	(*newRecord).Time = time.Now()
+	newRecords := &Records{table: make(map[interface{}]*Record)}
+	newRecords.table[rrtype] = newRecord
+	c.items[name] = newRecords
+}
+
 // Get looks up a key's value from the cache.
-func (c *LRU) Get(name string, rtype uint16) ([]dns.RR, error) {
+func (c *LRU) Get(name string, rtype uint16) ([]dns.RR, *time.Time, error) {
 	element := c.items[name]
 	if element == nil {
-		return []dns.RR{}, errors.New("Not exist")
+		return []dns.RR{}, &time.Time{}, errors.New("Not exist")
 	}
 	record := element.table[rtype]
 	if record == nil {
-		return []dns.RR{}, errors.New("Not exist")
+		return []dns.RR{}, &time.Time{}, errors.New("Not exist")
 	}
-	return *(record.list.Value.(*[]dns.RR)), nil
+	return *(record.list.Value.(*[]dns.RR)), &record.Time, nil
 }
 
 // Check if a key is in the cache, without updating the recent-ness
@@ -114,7 +129,6 @@ func (c *LRU) RemoveOldest() {
 	name := (*del)[0].Header().Name
 	rtype := (*del)[0].Header().Rrtype
 	delValue := c.items[name]
-	//del := delValue.table[delElem.Value.([]dns.RR)[0].Header().Rrtype]
 
 	if len(delValue.table) == 1 {
 		delete(c.items, name)
@@ -141,14 +155,15 @@ func (c *LRU) Len() int {
 	return c.evictList.Len()
 }
 
-func (c *LRU) addNew(s []dns.RR) {
-	rrtype := s[0].Header().Rrtype
-	name := s[0].Header().Name
-	entries := &s
-	newRecord := &Record{}
-	(*newRecord).list = c.evictList.PushFront(entries)
-	(*newRecord).Time = time.Now()
-	newRecords := &Records{table: make(map[interface{}]*Record)}
-	newRecords.table[rrtype] = newRecord
-	c.items[name] = newRecords
+func (c *LRU) Remove(name string, rtype uint16) error {
+	element := c.items[name]
+	if element == nil {
+		return errors.New("Not exist")
+	}
+	record := element.table[rtype]
+	if record == nil {
+		return errors.New("Not exist")
+	}
+	c.evictList.Remove(record.list)
+	return nil
 }

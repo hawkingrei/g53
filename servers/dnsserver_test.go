@@ -92,6 +92,7 @@ func TestDNSResponse(t *testing.T) {
 		{"wiki.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
+		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
 		{"b.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
 		{"foo.docker.", 0, "A", dns.RcodeNameError},
 	}

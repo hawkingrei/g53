@@ -17,7 +17,7 @@ func getmsg(name string, rtype uint16) dns.Msg {
 	return *in
 }
 
-func TestSimleLRU(t *testing.T) {
+func TestSimleMsgLRU(t *testing.T) {
 	_, err := NewLRU(0, func(s *[]dns.RR) { fmt.Println(*s) })
 	if err == nil {
 		t.Errorf("should get a error")
@@ -27,12 +27,20 @@ func TestSimleLRU(t *testing.T) {
 		t.Errorf("fail to create LRU")
 	}
 	l.Add(getmsg("www.baidu.com.", dns.TypeA).Answer)
+	l.Add(getmsg("www.google.com.", dns.TypeA).Answer)
+	l.Add(getmsg("www.google.com.", dns.TypeAAAA).Answer)
 	l.Add(getmsg("www.renren.com.", dns.TypeA).Answer)
 	l.Add(getmsg("www.taobao.com.", dns.TypeA).Answer)
 	l.Add(getmsg("www.weibo.com.", dns.TypeA).Answer)
 	fmt.Println(l.Get("www.baidu.com.", dns.TypeA))
 	fmt.Println(l.Get("www.weibo.com.", dns.TypeA))
+	fmt.Println(l.Get("www.weibo.com.", dns.TypeCNAME))
 	fmt.Println(l.Len())
 	fmt.Println(l.Keys())
+	l.Contains("www.baidu.com.")
+	l.Remove("www.weibo.com.", dns.TypeA)
+	l.Remove("www.weibo.com.", dns.TypeCNAME)
+	l.Remove("www.wwweeeiiiibo.com.", dns.TypeA)
+
 	l.Purge()
 }

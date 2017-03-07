@@ -43,7 +43,7 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
 
-	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("114.114.114.114:53").Strings()
+	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("8.8.8.8:53").Strings()
 	dns := app.Flag("dns", "Listen DNS requests on this address").Default(res.DnsAddr).Short('d').String()
 	http := app.Flag("http", "Listen HTTP requests on this address").Default(res.HttpAddr).Default(":80").String()
 	domain := app.Flag("domain", "Domain that is appended to all requests").Default(res.Domain.String()).String()
