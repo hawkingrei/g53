@@ -9,10 +9,10 @@ import (
 )
 
 func Round(val float64) uint32 {
-    if val < 0 {
-        return uint32(val-0.5)
-    }
-    return uint32(val+0.5)
+	if val < 0 {
+		return uint32(val - 0.5)
+	}
+	return uint32(val + 0.5)
 }
 
 // Cache is a thread-safe fixed size LRU cache.
@@ -56,7 +56,7 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 		return result, err
 	}
 	nowtime := time.Now()
-	var rr []dns.RR = make([]dns.RR,len(result))
+	var rr []dns.RR = make([]dns.RR, len(result))
 	for v := 0; v < len(result); v++ {
 		expiration := rtime.Add(time.Duration(result[v].Header().Ttl) * time.Second)
 		if expiration.Before(nowtime) {
@@ -64,20 +64,17 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 			return []dns.RR{}, errors.New("expiration")
 		}
 	}
-	
+
 	cttl := nowtime.Sub(*rtime).Seconds()
 	for v := 0; v < len(result); v++ {
 		rr[v] = dns.Copy(result[v])
 	}
-
 
 	for v := 0; v < len(rr); v++ {
 		rr[v].Header().Ttl = rr[v].Header().Ttl - Round(cttl)
 	}
 	return rr, err
 }
-
-
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
 func (c *MsgCache) Add(s []dns.RR) bool {
