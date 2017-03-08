@@ -19,7 +19,9 @@ func TestSimleLRU(t *testing.T) {
 	l.Get(utils.Service{"A", "", 0, "www.google.com"})
 	l.Remove(utils.Service{"A", "", 0, "www.google.com"})
 	l.Get(utils.Service{"A", "", 0, "www.google.com"})
-	fmt.Println(l.Contains("www.google.com"))
+	fmt.Println(l.Containkey("www.google.com"))
+	fmt.Println(l.Contains("www.google.com", "A"))
+	fmt.Println(l.Contains("www.google.com", "AAAA"))
 	if tmp, _ := l.Get(utils.Service{"MX", "", 0, "www.google.com"}); len(tmp) != 0 {
 		t.Errorf("not get nil")
 	}

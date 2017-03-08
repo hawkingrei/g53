@@ -93,3 +93,16 @@ func (c *Cache) List() []utils.Service {
 	defer c.lock.RUnlock()
 	return c.lru.List()
 }
+
+//Contains judge whether domain is in the cache
+func (c *Cache) Containkey(name string) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Containkey(name)
+}
+
+func (c *Cache) Contains(name string, rt string) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.lru.Contains(name, rt)
+}

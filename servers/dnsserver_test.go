@@ -123,6 +123,7 @@ func TestDNSResponse(t *testing.T) {
 		}
 
 		if input.expected < 0 && len(r.Answer) == 0 {
+			t.Log(len(r.Answer))
 			t.Error(input, "Expected at least one record but got none")
 		}
 

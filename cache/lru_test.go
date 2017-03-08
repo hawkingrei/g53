@@ -66,6 +66,12 @@ func TestLRU(t *testing.T) {
 	l.Add(utils.Service{"MX", "12.0.0.0", 600, "www.google.com"})
 	fmt.Println("4")
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.google.com"})
+	if !l.Containkey("www.google.com") {
+		t.Errorf("should contain")
+	}
+	if !l.Contains("www.google.com", "MX") {
+		t.Errorf("should contain")
+	}
 	fmt.Println("5")
 	l.Purge()
 	l.Add(utils.Service{"MX", "13.0.0.0", 600, "www.oschina.com"})

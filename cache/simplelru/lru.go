@@ -15,7 +15,7 @@ type Record struct {
 }
 
 type Records struct {
-	table map[string]*Record
+	table map[interface{}]*Record
 }
 
 type LRU struct {
@@ -120,8 +120,17 @@ func (c *LRU) Get(s utils.Service) ([]utils.Entry, error) {
 
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
-func (c *LRU) Contains(key interface{}) (ok bool) {
+func (c *LRU) Containkey(key interface{}) (ok bool) {
 	_, ok = c.items[key]
+	return ok
+}
+
+func (c *LRU) Contains(key interface{}, rt string) (ok bool) {
+	_, ok = c.items[key]
+	if ok {
+		_, ok = c.items[key].table[rt]
+		return ok
+	}
 	return ok
 }
 
@@ -166,7 +175,7 @@ func (c *LRU) addNew(s utils.Service) {
 	entries := &utils.Entry{s.RecordType, s.Value, s.TTL, s.Aliases, time.Now()}
 	newRecord := &Record{make([]*list.Element, 0)}
 	(*newRecord).list = append((*newRecord).list, c.evictList.PushFront(entries))
-	newRecords := &Records{table: make(map[string]*Record)}
+	newRecords := &Records{table: make(map[interface{}]*Record)}
 	newRecords.table[s.RecordType] = newRecord
 	c.items[s.Aliases] = newRecords
 }

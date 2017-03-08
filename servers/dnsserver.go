@@ -140,31 +140,38 @@ func (s *DNSServer) queryDnsCache(r *dns.Msg) (*dns.Msg, error) {
 
 }
 
+func (s *DNSServer) DNSExchange(c dns.Client, nameservers string, r *dns.Msg) (*dns.Msg, []dns.RR, error) {
+	in, _, err := c.Exchange(r, nameservers)
+	if err == nil {
+		if len(in.Answer) != 0 {
+			logger.Debugf("Cache answer")
+			s.publicDns.Add(in.Answer)
+		}
+		return in, in.Answer, err
+	}
+	return new(dns.Msg), []dns.RR{}, err
+}
+
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	//r.SetEdns0(4096, true)
 	logger.Debugf("Using DNS forwarding for '%s'", r.Question[0].Name)
 	logger.Debugf("Forwarding DNS nameservers: %s", s.config.Nameservers.String())
 
 	// Otherwise just forward the request to another server
-	c := new(dns.Client)
-	c.UDPSize = uint16(4096)
 
 	if result, err := s.queryDnsCache(r); err == nil {
 		logger.Debugf("Hit Public Cache")
 		w.WriteMsg(result)
 		return
 	}
-
+	c := new(dns.Client)
+	c.UDPSize = uint16(4096)
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
 		logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
 
-		in, _, err := c.Exchange(r, s.config.Nameservers[i])
+		in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
 		if err == nil {
-			if len(in.Answer) != 0 {
-				logger.Debugf("Cache answer")
-				s.publicDns.Add(in.Answer)
-			}
 			w.WriteMsg(in)
 			return
 		}
@@ -223,6 +230,35 @@ func (s *DNSServer) makeServiceA(n string, service utils.Service) dns.RR {
 	return rr
 }
 
+//func (s *DNSServer) RecursionPrivate(service utils.Service) dns.RR {
+//	result, err := s.privateDns.Get(service)//
+//}
+
+func (s *DNSServer) MakePrivateRR(query string, qtype uint16, m *dns.Msg) {
+	result := s.queryServices(utils.Service{dns.TypeToString[qtype], "", 0, strings.ToLower(query)})
+	for services := range result {
+		for i := range services {
+			var rr dns.RR
+			switch qtype {
+			case dns.TypeA:
+				rr = s.makeServiceA(query, utils.EntryToServer(&services[i]))
+			case dns.TypeCNAME:
+				rr = s.makeServiceCNAME(query, utils.EntryToServer(&services[i]))
+			default:
+				// this query type isn't supported, but we do have
+				// a record with this name. Per RFC 4074 sec. 3, we
+				// immediately return an empty NOERROR reply.
+				m.Ns = s.createSOA()
+				m.MsgHdr.Authoritative = true
+				continue
+			}
+			m.Answer = append(m.Answer, rr)
+
+		}
+	}
+}
+
+//handle with dns request
 func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.Compress = true
@@ -250,27 +286,38 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if query[len(query)-1] != '.' {
 		query = query + "."
 	}
+	existDomain := s.privateDns.Containkey(query)
 	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
-	result := s.queryServices(utils.Service{dns.TypeToString[r.Question[0].Qtype], "", 0, strings.ToLower(query)})
-	for services := range result {
-		for i := range services {
-			var rr dns.RR
-			switch r.Question[0].Qtype {
-			case dns.TypeA:
-				rr = s.makeServiceA(r.Question[0].Name, utils.EntryToServer(&services[i]))
-			case dns.TypeCNAME:
-				rr = s.makeServiceCNAME(r.Question[0].Name, utils.EntryToServer(&services[i]))
-			default:
-				// this query type isn't supported, but we do have
-				// a record with this name. Per RFC 4074 sec. 3, we
-				// immediately return an empty NOERROR reply.
-				m.Ns = s.createSOA()
-				m.MsgHdr.Authoritative = true
-				w.WriteMsg(m)
-				return
+	s.MakePrivateRR(query, r.Question[0].Qtype, m)
+	if len(m.Answer) != 0 && m.Answer[0].Header().Rrtype == dns.TypeSOA {
+		w.WriteMsg(m)
+		return
+	}
+	if len(m.Answer) == 0 && existDomain && r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeA {
+		logger.Debugf("DNS record found for query '%s'  '%s'", query, "CNAME")
+		s.MakePrivateRR(query, dns.TypeA, m)
+	}
+	if len(m.Answer) != 0 && m.Answer[len(m.Answer)-1].Header().Rrtype == dns.TypeCNAME {
+		tmplong := len(m.Answer)
+		s.MakePrivateRR(m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, m)
+		if len(m.Answer) == tmplong {
+			c := new(dns.Client)
+			c.UDPSize = uint16(4096)
+			askmsg := new(dns.Msg)
+			askmsg.Id = dns.Id()
+			askmsg.RecursionDesired = true
+			askmsg.Question = make([]dns.Question, 1)
+			askmsg.Question[0] = dns.Question{m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, dns.ClassINET}
+			for i := range s.config.Nameservers {
+				in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
+				if err == nil {
+					for v := range in.Answer {
+						m.Answer = append(m.Answer, in.Answer[v])
+					}
+					w.WriteMsg(m)
+					return
+				}
 			}
-			m.Answer = append(m.Answer, rr)
-
 		}
 	}
 
