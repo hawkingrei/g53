@@ -2,7 +2,6 @@ package cmdline
 
 import (
 	"bytes"
-	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"runtime"
 	"strconv"
@@ -43,25 +42,20 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
 
-	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("8.8.8.8:53").Strings()
+	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("8.8.8.8:53,8.8.4.4:53").Strings()
 	dns := app.Flag("dns", "Listen DNS requests on this address").Default(res.DnsAddr).Short('d').String()
 	http := app.Flag("http", "Listen HTTP requests on this address").Default(res.HttpAddr).Default(":80").String()
-	domain := app.Flag("domain", "Domain that is appended to all requests").Default(res.Domain.String()).String()
-	environment := app.Flag("environment", "Optional context before domain suffix").Default("").String()
 	ttl := app.Flag("ttl", "TTL for matched requests").Default(strconv.FormatInt(int64(res.Ttl), 10)).Int()
-	createAlias := app.Flag("alias", "Automatically create an alias with just the container name.").Default(strconv.FormatBool(res.CreateAlias)).Bool()
+	
 	verbose := app.Flag("verbose", "Verbose mode.").Default(strconv.FormatBool(res.Verbose)).Short('v').Bool()
 	quiet := app.Flag("quiet", "Quiet mode.").Default(strconv.FormatBool(res.Quiet)).Short('q').Bool()
 
 	kingpin.MustParse(app.Parse(rawParams))
-
 	res.Verbose = *verbose
 	res.Quiet = *quiet
 	res.Nameservers = *nameservers
 	res.DnsAddr = *dns
 	res.HttpAddr = *http
-	res.Domain = utils.NewDomain(fmt.Sprintf("%s.%s", *environment, *domain))
 	res.Ttl = *ttl
-	res.CreateAlias = *createAlias
 	return
 }
