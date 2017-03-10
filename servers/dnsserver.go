@@ -166,6 +166,7 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	}
 	c := new(dns.Client)
 	c.UDPSize = uint16(4096)
+	c.Timeout = time.Duration(5)*time.Second
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
 		logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
@@ -303,6 +304,7 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 		if len(m.Answer) == tmplong {
 			c := new(dns.Client)
 			c.UDPSize = uint16(4096)
+			c.Timeout = time.Duration(5)*time.Second
 			askmsg := new(dns.Msg)
 			askmsg.Id = dns.Id()
 			askmsg.RecursionDesired = true
