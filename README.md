@@ -55,4 +55,5 @@ curl http://<host>:<ip>/version
 
 #### To do
 - Support tls
-- Add cache
+- Update restful 
+- Update document
