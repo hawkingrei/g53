@@ -166,7 +166,7 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	}
 	c := new(dns.Client)
 	c.UDPSize = uint16(4096)
-	c.Timeout = time.Duration(5)*time.Second
+	c.Timeout = time.Duration(5) * time.Second
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
 		logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
@@ -288,36 +288,39 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 		query = query + "."
 	}
 	existDomain := s.privateDns.Containkey(query)
-	logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
-	s.MakePrivateRR(query, r.Question[0].Qtype, m)
-	if len(m.Answer) != 0 && m.Answer[0].Header().Rrtype == dns.TypeSOA {
-		w.WriteMsg(m)
-		return
-	}
-	if len(m.Answer) == 0 && existDomain && r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeA {
-		logger.Debugf("DNS record found for query '%s'  '%s'", query, "CNAME")
-		s.MakePrivateRR(query, dns.TypeA, m)
-	}
-	if len(m.Answer) != 0 && m.Answer[len(m.Answer)-1].Header().Rrtype == dns.TypeCNAME {
-		tmplong := len(m.Answer)
-		s.MakePrivateRR(m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, m)
-		if len(m.Answer) == tmplong {
-			c := new(dns.Client)
-			c.UDPSize = uint16(4096)
-			c.Timeout = time.Duration(5)*time.Second
-			askmsg := new(dns.Msg)
-			askmsg.Id = dns.Id()
-			askmsg.RecursionDesired = true
-			askmsg.Question = make([]dns.Question, 1)
-			askmsg.Question[0] = dns.Question{m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, dns.ClassINET}
-			for i := range s.config.Nameservers {
-				in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
-				if err == nil {
-					for v := range in.Answer {
-						m.Answer = append(m.Answer, in.Answer[v])
+	if existDomain {
+		logger.Debugf("DNS record found for query '%s'  '%s'", query, dns.TypeToString[r.Question[0].Qtype])
+		s.MakePrivateRR(query, r.Question[0].Qtype, m)
+		if len(m.Answer) != 0 && m.Answer[0].Header().Rrtype == dns.TypeSOA {
+			w.WriteMsg(m)
+			return
+		}
+		if len(m.Answer) == 0 && r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeA {
+			logger.Debugf("DNS record found for query '%s'  '%s'", query, "CNAME")
+			s.MakePrivateRR(query, dns.TypeA, m)
+		}
+
+		if len(m.Answer) != 0 && m.Answer[len(m.Answer)-1].Header().Rrtype == dns.TypeCNAME {
+			tmplong := len(m.Answer)
+			s.MakePrivateRR(m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, m)
+			if len(m.Answer) == tmplong {
+				c := new(dns.Client)
+				c.UDPSize = uint16(4096)
+				c.Timeout = time.Duration(5) * time.Second
+				askmsg := new(dns.Msg)
+				askmsg.Id = dns.Id()
+				askmsg.RecursionDesired = true
+				askmsg.Question = make([]dns.Question, 1)
+				askmsg.Question[0] = dns.Question{m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, dns.ClassINET}
+				for i := range s.config.Nameservers {
+					in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
+					if err == nil {
+						for v := range in.Answer {
+							m.Answer = append(m.Answer, in.Answer[v])
+						}
+						w.WriteMsg(m)
+						return
 					}
-					w.WriteMsg(m)
-					return
 				}
 			}
 		}
