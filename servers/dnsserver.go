@@ -8,6 +8,7 @@ import (
 
 	"github.com/hawkingrei/g53/cache"
 	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/servers/dnsutils"
 )
 
 // NewService creates a new service
@@ -20,7 +21,7 @@ func NewService() (s *utils.Service) {
 type ServiceListProvider interface {
 	AddService(utils.Service)
 	RemoveService(utils.Service) error
-	SetService(utils.Service, utils.Service) error
+	//SetService(utils.Service, utils.Service) error
 	GetService(utils.Service) ([]utils.Service, error)
 	GetAllServices() []utils.Service
 }
@@ -64,9 +65,9 @@ func (s *DNSServer) Stop() {
 	s.server.Shutdown()
 }
 
-func (s *DNSServer) SetService(originalValue utils.Service, modifyValue utils.Service) error {
-	return s.privateDns.Set(originalValue, modifyValue)
-}
+//func (s *DNSServer) SetService(originalValue utils.Service, modifyValue utils.Service) error {
+//	return s.privateDns.Set(originalValue, modifyValue)
+//}
 
 // AddService adds a new container and thus new DNS records
 func (s *DNSServer) AddService(service utils.Service) {
@@ -121,22 +122,7 @@ func (s *DNSServer) GetAllServices() []utils.Service {
 }
 
 func (s *DNSServer) queryDnsCache(r *dns.Msg) (*dns.Msg, error) {
-	m := new(dns.Msg)
-	m.Compress = true
-	m.SetReply(r)
-	m.RecursionAvailable = true
-
-	name := r.Question[0].Name
-	recordType := r.Question[0].Qtype
-	result, err := s.publicDns.Get(name, recordType)
-	if err != nil {
-		return m, err
-	}
-	for v := 0; v < len(result); v++ {
-		m.Answer = append(m.Answer, result[v])
-	}
-
-	return m, nil
+	return dnsutils.QueryDnsCache(s.publicDns,r)
 
 }
 

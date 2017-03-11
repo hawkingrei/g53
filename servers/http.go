@@ -35,7 +35,7 @@ func NewHTTPServer(c *utils.Config, list ServiceListProvider) *HTTPServer {
 	router.HandleFunc("/services", s.getServices).Methods("GET")
 	router.HandleFunc("/service", s.getService).Methods("GET")
 	router.HandleFunc("/service", s.addService).Methods("PUT")
-	router.HandleFunc("/service", s.updateService).Methods("PATCH")
+	//router.HandleFunc("/service", s.updateService).Methods("PATCH")
 	router.HandleFunc("/service", s.removeService).Methods("DELETE")
 	router.HandleFunc("/set/ttl", s.setTTL).Methods("PUT")
 
@@ -112,28 +112,6 @@ func (s *HTTPServer) removeService(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
-	var result map[string]utils.Service
-	if err := json.NewDecoder(req.Body).Decode(&result); err != nil {
-		logger.Errorf("JSON decoding error: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := s.validation(result["originalValue"]); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := s.validation(result["modifyValue"]); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// todo: this probably needs to be moved. consider stop event in the
-	// middle of sending PATCH. container would not be removed.
-	if err := s.list.SetService(result["originalValue"], result["modifyValue"]); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-}
-
 func (s *HTTPServer) setTTL(w http.ResponseWriter, req *http.Request) {
 	var value int
 	if err := json.NewDecoder(req.Body).Decode(&value); err != nil {
@@ -191,3 +169,26 @@ func validateDomainName(domain string) bool {
  ]{2,3})$`)
 	return RegExp.MatchString(domain)
 }
+/*
+func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
+	var result map[string]utils.Service
+	if err := json.NewDecoder(req.Body).Decode(&result); err != nil {
+		logger.Errorf("JSON decoding error: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := s.validation(result["originalValue"]); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := s.validation(result["modifyValue"]); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// todo: this probably needs to be moved. consider stop event in the
+	// middle of sending PATCH. container would not be removed.
+	if err := s.list.SetService(result["originalValue"], result["modifyValue"]); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+}
+*/
