@@ -281,7 +281,7 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 			w.WriteMsg(m)
 			return
 		}
-		if len(m.Answer) == 0 && r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeA {
+		if len(m.Answer) == 0 && (r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeAAAA) {
 			logger.Debugf("DNS record found for query '%s'  '%s'", query, "CNAME")
 			s.MakePrivateRR(query, dns.TypeA, m)
 		}
