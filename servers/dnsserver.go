@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/hawkingrei/g53/cache"
-	"github.com/hawkingrei/g53/utils"
 	"github.com/hawkingrei/g53/servers/dnsutils"
+	"github.com/hawkingrei/g53/utils"
 )
 
 // NewService creates a new service
@@ -33,16 +33,21 @@ type DNSServer struct {
 	mux        *dns.ServeMux
 	publicDns  *cache.MsgCache
 	privateDns *cache.Cache
+	dnsclient  *dns.Client
 }
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
 	publicDns, _ := cache.NewMsgCache(10000)
 	privateDns, _ := cache.New(100000000)
+	dnsclient := new(dns.Client)
+	dnsclient.UDPSize = uint16(4096)
+	dnsclient.Timeout = time.Duration(5) * time.Second
 	s := &DNSServer{
 		config:     c,
 		publicDns:  publicDns,
 		privateDns: privateDns,
+		dnsclient:  dnsclient,
 	}
 
 	logger.Debugf("Handling DNS requests for '%s'.", c.Domain.String())
@@ -122,12 +127,12 @@ func (s *DNSServer) GetAllServices() []utils.Service {
 }
 
 func (s *DNSServer) queryDnsCache(r *dns.Msg) (*dns.Msg, error) {
-	return dnsutils.QueryDnsCache(s.publicDns,r)
+	return dnsutils.QueryDnsCache(s.publicDns, r)
 
 }
 
-func (s *DNSServer) DNSExchange(c dns.Client, nameservers string, r *dns.Msg) (*dns.Msg, []dns.RR, error) {
-	in, _, err := c.Exchange(r, nameservers)
+func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns.RR, error) {
+	in, _, err := s.dnsclient.Exchange(r, nameservers)
 	if err == nil {
 		if len(in.Answer) != 0 {
 			logger.Debugf("Cache answer")
@@ -150,14 +155,11 @@ func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 		w.WriteMsg(result)
 		return
 	}
-	c := new(dns.Client)
-	c.UDPSize = uint16(4096)
-	c.Timeout = time.Duration(5) * time.Second
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
 		logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
 
-		in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
+		in, _, err := s.DNSExchange(s.config.Nameservers[i], r)
 		if err == nil {
 			w.WriteMsg(in)
 			return
@@ -290,16 +292,13 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 			tmplong := len(m.Answer)
 			s.MakePrivateRR(m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, m)
 			if len(m.Answer) == tmplong {
-				c := new(dns.Client)
-				c.UDPSize = uint16(4096)
-				c.Timeout = time.Duration(5) * time.Second
 				askmsg := new(dns.Msg)
 				askmsg.Id = dns.Id()
 				askmsg.RecursionDesired = true
 				askmsg.Question = make([]dns.Question, 1)
 				askmsg.Question[0] = dns.Question{m.Answer[len(m.Answer)-1].String(), dns.TypeCNAME, dns.ClassINET}
 				for i := range s.config.Nameservers {
-					in, _, err := s.DNSExchange(*c, s.config.Nameservers[i], r)
+					in, _, err := s.DNSExchange(s.config.Nameservers[i], r)
 					if err == nil {
 						for v := range in.Answer {
 							m.Answer = append(m.Answer, in.Answer[v])

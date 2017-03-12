@@ -169,6 +169,7 @@ func validateDomainName(domain string) bool {
  ]{2,3})$`)
 	return RegExp.MatchString(domain)
 }
+
 /*
 func (s *HTTPServer) updateService(w http.ResponseWriter, req *http.Request) {
 	var result map[string]utils.Service

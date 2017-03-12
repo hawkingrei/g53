@@ -1,11 +1,11 @@
 package dnsutils
 
 import (
-	"github.com/miekg/dns"
 	"github.com/hawkingrei/g53/cache"
+	"github.com/miekg/dns"
 )
 
-func QueryDnsCache(s *cache.MsgCache,r *dns.Msg) (*dns.Msg, error) {
+func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 	m := new(dns.Msg)
 	m.Compress = true
 	m.SetReply(r)
