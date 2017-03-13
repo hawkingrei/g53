@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"text/template"
-
+        "strings"
 	"github.com/hawkingrei/g53/utils"
 	"github.com/hawkingrei/g53/version"
 )
@@ -42,7 +42,7 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 	app.Version(VERSION)
 	app.HelpFlag.Short('h')
 
-	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("8.8.8.8:53,8.8.4.4:53").Strings()
+	nameservers := app.Flag("nameserver", "Comma separated list of DNS server(s) for unmatched requests").Default("8.8.8.8:53,8.8.4.4:53").String()
 	dns := app.Flag("dns", "Listen DNS requests on this address").Default(res.DnsAddr).Short('d').String()
 	http := app.Flag("http", "Listen HTTP requests on this address").Default(res.HttpAddr).Default(":80").String()
 	ttl := app.Flag("ttl", "TTL for matched requests").Default(strconv.FormatInt(int64(res.Ttl), 10)).Int()
@@ -53,7 +53,7 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 	kingpin.MustParse(app.Parse(rawParams))
 	res.Verbose = *verbose
 	res.Quiet = *quiet
-	res.Nameservers = *nameservers
+	res.Nameservers = strings.Split(*nameservers,",")
 	res.DnsAddr = *dns
 	res.HttpAddr = *http
 	res.Ttl = *ttl
