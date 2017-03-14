@@ -129,12 +129,7 @@ func (c *LRU) RemoveOldest() {
 	name := (*del)[0].Header().Name
 	rtype := (*del)[0].Header().Rrtype
 	delValue := c.items[name]
-
-	if len(delValue.table) == 1 {
-		delete(c.items, name)
-	} else {
-		delete(delValue.table, rtype)
-	}
+	delete(delValue.table, rtype)
 	c.evictList.Remove(delElem)
 }
 
