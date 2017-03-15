@@ -57,3 +57,4 @@ curl http://<host>:<ip>/version
 - Support tls
 - Update restful 
 - Update document
+- Add lock-free cache
