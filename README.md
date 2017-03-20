@@ -37,6 +37,9 @@ curl http://<host>:<ip>/services
 # add new service manually
 curl http://<host>:<ip>/service -X PUT --data-ascii '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
 
+# remove a service
+curl http://<host>:<ip>/service  -X DELETE '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
+
 # set new default TTL value
 curl http://<host>:<ip>/set/ttl -X PUT --data-ascii '10'
 
