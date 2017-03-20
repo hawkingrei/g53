@@ -34,17 +34,9 @@ sudo docker run -d -p 80:80 -p 53:53/udp  g53
 # show all active services
 curl http://<host>:<ip>/services
 
-# show a service
-curl http://<host>:<ip>/services/<Aliases>
 
 # add new service manually
-curl http://<host>:<ip>/services -X PUT --data-ascii '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
-
-# remove a service
-curl http://<host>:<ip>/service/<Aliases> -X DELETE
-
-# change a property of an existing service
-curl http://<host>:<ip>/service/<Aliases> -X PATCH --data-ascii '{"ttl": 0}'
+curl http://<host>:<ip>/service -X PUT --data-ascii '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
 
 # set new default TTL value
 curl http://<host>:<ip>/set/ttl -X PUT --data-ascii '10'
