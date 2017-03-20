@@ -34,7 +34,6 @@ sudo docker run -d -p 80:80 -p 53:53/udp  g53
 # show all active services
 curl http://<host>:<ip>/services
 
-
 # add new service manually
 curl http://<host>:<ip>/service -X PUT --data-ascii '{"RecordType":"A","Value":"127.0.0.1","TTL":3600,"Aliases":"c.d.net"}'
 
