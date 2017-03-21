@@ -4,9 +4,14 @@ import (
 	"errors"
 	"github.com/hawkingrei/g53/cache/simplemsglru"
 	"github.com/miekg/dns"
+	"github.com/spaolacci/murmur3"
 	"sync"
 	"time"
 )
+
+func hashFunc(data []byte) uint64 {
+	return murmur3.Sum64(data)
+}
 
 func Round(val float64) uint32 {
 	if val < 0 {
@@ -17,8 +22,8 @@ func Round(val float64) uint32 {
 
 // Cache is a thread-safe fixed size LRU cache.
 type MsgCache struct {
-	lru  *simplemsglru.LRU
-	lock sync.RWMutex
+	lru  [256]*simplemsglru.LRU
+	lock [256]sync.RWMutex
 }
 
 // New creates an LRU of the given size
@@ -28,29 +33,33 @@ func NewMsgCache(size int) (*MsgCache, error) {
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewMsgCacheWithEvict(size int, onEvicted func(s *[]dns.RR)) (*MsgCache, error) {
-	lru, err := simplemsglru.NewLRU(size, simplemsglru.EvictCallback(onEvicted))
-	if err != nil {
-		return nil, err
-	}
-	c := &MsgCache{
-		lru: lru,
+func NewMsgCacheWithEvict(size int, onEvicted func(s *[]dns.RR)) (c *MsgCache, err error) {
+	c = new(MsgCache)
+	for i := 0; i < 256; i++ {
+		c.lru[i], err = simplemsglru.NewLRU(size/256, simplemsglru.EvictCallback(onEvicted))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return c, nil
 }
 
 // Purge is used to completely clear the cache
 func (c *MsgCache) Purge() {
-	c.lock.Lock()
-	c.lru.Purge()
-	c.lock.Unlock()
+	for i := 0; i < 256; i++ {
+		c.lock[i].Lock()
+		c.lru[i].Purge()
+		c.lock[i].Unlock()
+	}
 }
 
 // Get looks up a key's value from the cache.
 func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	result, rtime, err := c.lru.Get(name, rtype)
+	hashVal := hashFunc([]byte(name))
+	segId := hashVal & 255
+	c.lock[segId].Lock()
+	defer c.lock[segId].Unlock()
+	result, rtime, err := c.lru[segId].Get(name, rtype)
 
 	if err != nil {
 		return result, err
@@ -78,25 +87,37 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
 func (c *MsgCache) Add(s []dns.RR) bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	return c.lru.Add(s)
+	hashVal := hashFunc([]byte(s[0].Header().Name))
+	segId := hashVal & 255
+	c.lock[segId].Lock()
+	defer c.lock[segId].Unlock()
+	return c.lru[segId].Add(s)
 }
 
 // Keys returns a slice of the keys in the cache, from oldest to newest.
-func (c *MsgCache) Keys() []interface{} {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-	return c.lru.Keys()
+func (c *MsgCache) Keys() (result []interface{}) {
+	for i := 0; i < 256; i++ {
+		c.lock[i].RLock()
+		result = append(result, c.lru[i].Keys()...)
+		c.lock[i].RUnlock()
+	}
+	return result
 }
 
 // Len returns the number of items in the cache.
-func (c *MsgCache) Len() int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-	return c.lru.Len()
+func (c *MsgCache) Len() (result int) {
+	for i := 0; i < 256; i++ {
+		c.lock[i].RLock()
+		result = result + c.lru[i].Len()
+		c.lock[i].RUnlock()
+	}
+	return result
 }
 
 func (c *MsgCache) remove(name string, rtype uint16) error {
-	return c.lru.Remove(name, rtype)
+	hashVal := hashFunc([]byte(name))
+	segId := hashVal & 255
+	c.lock[segId].Lock()
+	defer c.lock[segId].Unlock()
+	return c.lru[segId].Remove(name, rtype)
 }

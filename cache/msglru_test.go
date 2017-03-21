@@ -22,7 +22,7 @@ func TestMsgLRU(t *testing.T) {
 	if err == nil {
 		t.Errorf("should get a error")
 	}
-	l, err := NewMsgCacheWithEvict(3, func(s *[]dns.RR) { fmt.Println(*s) })
+	l, err := NewMsgCacheWithEvict(256*1024, func(s *[]dns.RR) { fmt.Println(*s) })
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}

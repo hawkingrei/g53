@@ -2,13 +2,13 @@ package cmdline
 
 import (
 	"bytes"
+	"github.com/hawkingrei/g53/utils"
+	"github.com/hawkingrei/g53/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"runtime"
 	"strconv"
+	"strings"
 	"text/template"
-        "strings"
-	"github.com/hawkingrei/g53/utils"
-	"github.com/hawkingrei/g53/version"
 )
 
 // CommandLine structure handling parameter parsing
@@ -53,7 +53,7 @@ func (cmdline *CommandLine) ParseParameters(rawParams []string) (res *utils.Conf
 	kingpin.MustParse(app.Parse(rawParams))
 	res.Verbose = *verbose
 	res.Quiet = *quiet
-	res.Nameservers = strings.Split(*nameservers,",")
+	res.Nameservers = strings.Split(*nameservers, ",")
 	res.DnsAddr = *dns
 	res.HttpAddr = *http
 	res.Ttl = *ttl
