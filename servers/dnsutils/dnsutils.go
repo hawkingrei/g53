@@ -20,8 +20,10 @@ func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 			return m, err
 		}
 	}
+
 	for v := 0; v < len(result); v++ {
 		m.Answer = append(m.Answer, result[v])
 	}
+
 	return m, nil
 }

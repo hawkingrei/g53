@@ -38,7 +38,7 @@ type DNSServer struct {
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
-	publicDns, _ := cache.NewMsgCache(256 * 10000)
+	publicDns, _ := cache.NewMsgCache(256 * 1000)
 	privateDns, _ := cache.New(100000000)
 	dnsclient := new(dns.Client)
 	dnsclient.UDPSize = uint16(4096)
@@ -135,7 +135,7 @@ func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns
 	in, _, err := s.dnsclient.Exchange(r, nameservers)
 	if err == nil {
 		if len(in.Answer) != 0 {
-			logger.Debugf("Cache answer")
+			logger.Debugf(" '%s' write Cache", r.Question[0].Name)
 			s.publicDns.Add(in.Answer)
 		}
 		return in, in.Answer, err
@@ -144,20 +144,17 @@ func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns
 }
 
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
-	//r.SetEdns0(4096, true)
-	logger.Debugf("Using DNS forwarding for '%s'", r.Question[0].Name)
-	logger.Debugf("Forwarding DNS nameservers: %s", s.config.Nameservers.String())
-
 	// Otherwise just forward the request to another server
-
 	if result, err := s.queryDnsCache(r); err == nil {
-		logger.Debugf("Hit Public Cache")
+		logger.Debugf("'%s' Hit Public Cache", r.Question[0].Name)
 		w.WriteMsg(result)
 		return
 	}
+	logger.Debugf("Using DNS forwarding for '%s'", r.Question[0].Name)
+	logger.Debugf("Forwarding DNS nameservers: %s", s.config.Nameservers.String())
 	// look at each Nameserver, stop on success
 	for i := range s.config.Nameservers {
-		logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
+		//logger.Debugf("Using Nameserver %s", s.config.Nameservers[i])
 
 		in, _, err := s.DNSExchange(s.config.Nameservers[i], r)
 		if err == nil {
@@ -267,7 +264,6 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 		w.WriteMsg(m)
 		return
 	}
-
 	m.Answer = make([]dns.RR, 0, 2)
 	query := r.Question[0].Name
 
@@ -310,9 +306,8 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 			}
 		}
 	}
-
 	// We didn't find a record corresponding to the query
-	if len(m.Answer) == 0 {
+	if !(len(m.Answer) > 0) {
 		s.handleForward(w, r)
 		return
 	}

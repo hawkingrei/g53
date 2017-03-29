@@ -60,7 +60,6 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 	c.lock[segId].Lock()
 	defer c.lock[segId].Unlock()
 	result, rtime, err := c.lru[segId].Get(name, rtype)
-
 	if err != nil {
 		return result, err
 	}
@@ -69,19 +68,23 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 	for v := 0; v < len(result); v++ {
 		expiration := rtime.Add(time.Duration(result[v].Header().Ttl) * time.Second)
 		if expiration.Before(nowtime) {
-			c.remove(name, rtype)
+			c.lru[segId].Remove(name, rtype)
 			return []dns.RR{}, errors.New("expiration")
 		}
 	}
-
 	cttl := nowtime.Sub(*rtime).Seconds()
 	for v := 0; v < len(result); v++ {
 		rr[v] = dns.Copy(result[v])
 	}
-
 	for v := 0; v < len(rr); v++ {
-		rr[v].Header().Ttl = rr[v].Header().Ttl - Round(cttl)
+		tmp := rr[v].Header().Ttl - Round(cttl)
+		if tmp <= 1 {
+			c.lru[segId].Remove(name, rtype)
+			return []dns.RR{}, errors.New("expiration")
+		}
+		rr[v].Header().Ttl = tmp
 	}
+
 	return rr, err
 }
 
@@ -117,7 +120,5 @@ func (c *MsgCache) Len() (result int) {
 func (c *MsgCache) remove(name string, rtype uint16) error {
 	hashVal := hashFunc([]byte(name))
 	segId := hashVal & 255
-	c.lock[segId].Lock()
-	defer c.lock[segId].Unlock()
 	return c.lru[segId].Remove(name, rtype)
 }

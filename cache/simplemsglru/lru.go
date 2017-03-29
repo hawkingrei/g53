@@ -160,5 +160,9 @@ func (c *LRU) Remove(name string, rtype uint16) error {
 		return errors.New("Not exist")
 	}
 	c.evictList.Remove(record.list)
+	delete(element.table, rtype)
+	if len(element.table) == 0 {
+		delete(c.items, name)
+	}
 	return nil
 }
