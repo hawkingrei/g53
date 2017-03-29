@@ -313,7 +313,7 @@ func (s *DNSServer) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	// We didn't find a record corresponding to the query
 	if len(m.Answer) == 0 {
-		go s.handleForward(w, r)
+		s.handleForward(w, r)
 		return
 	}
 	w.WriteMsg(m)
