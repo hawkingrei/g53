@@ -41,7 +41,7 @@ func TestDNSError(t *testing.T) {
 		m.SetEdns0(4096, true)
 		m.SetQuestion(input.query, qType)
 		in, _, err := c.Exchange(m, TestAddr)
-		//t.Log(r)
+		////t.Log(r)
 		if err != nil {
 			t.Error("Error response from the server", err)
 			break
@@ -71,7 +71,7 @@ func TestDNSResponse(t *testing.T) {
 	//server.AddService("www.duitang.net", Service{RecordType: "CNAME", TTL: 600 , Value: "www.cctv.com",Aliases: "www.duitang.net"})
 	server.AddService(utils.Service{RecordType: "A", TTL: 600, Value: "127.0.0.1", Aliases: "a.duitang.net"})
 	server.AddService(utils.Service{RecordType: "CNAME", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
-	server.AddService(utils.Service{RecordType: "MX", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
+	//server.AddService(utils.Service{RecordType: "MX", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
 	//server.AddService("b.duitang.net", Service{RecordType:"MX",TTL:60,Value:"mxbiz1.qq.com.",Aliases:"b.duitang.net"})
 	//server.AddService("foo", Service{Name: "foo", Image: "bar", IPs: []net.IP{net.ParseIP("127.0.0.1")}})
 	//server.AddService("baz", Service{Name: "baz", Image: "bar", IPs: []net.IP{net.ParseIP("127.0.0.1")}, TTL: -1})
@@ -87,13 +87,13 @@ func TestDNSResponse(t *testing.T) {
 		{"hawkingreirrrr.com.", 0, "A", dns.RcodeNameError},
 		{"hawkingreirrrr.com.", 0, "SOA", dns.RcodeSuccess},
 		{"google.com.", -1, "A", dns.RcodeSuccess},
-		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
-		{"google.com.", -1, "MX", dns.RcodeSuccess},
+		//{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
+		//{"google.com.", -1, "MX", dns.RcodeSuccess},
 		{"wiki.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
-		{"b.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
+		//{"b.duitang.net.", -1, "CNAME", dns.RcodeNameError},
 		{"foo.docker.", 0, "A", dns.RcodeNameError},
 	}
 
@@ -104,7 +104,7 @@ func TestDNSResponse(t *testing.T) {
 	c.WriteTimeout = 15 * time.Second
 	c.UDPSize = uint16(4096)
 	for _, input := range inputs {
-		t.Log("Query", input.query, input.qType)
+		//t.Log("Query", input.query, input.qType)
 		qType := dns.StringToType[input.qType]
 
 		m := new(dns.Msg)
@@ -123,7 +123,7 @@ func TestDNSResponse(t *testing.T) {
 		}
 
 		if input.expected < 0 && len(r.Answer) == 0 {
-			t.Log(len(r.Answer))
+			//t.Log(len(r.Answer))
 			t.Error(input, "Expected at least one record but got none")
 		}
 
@@ -138,7 +138,7 @@ func TestDNSResponse(t *testing.T) {
 			if input.qType != rrType {
 				t.Error("Did not receive ", input.qType, " resource record")
 			} else {
-				t.Log("Received expected response RR type", rrType, "code", dns.RcodeToString[input.rcode])
+				//t.Log("Received expected response RR type", rrType, "code", dns.RcodeToString[input.rcode])
 			}
 		}
 
@@ -207,7 +207,7 @@ func TestServiceManagement(t *testing.T) {
 		}
 
 		if len(list.GetAllServices()) != 1 {
-			t.Log(len(list.GetAllServices()))
+			//t.Log(len(list.GetAllServices()))
 			t.Error("Item count after remove should be 1")
 		}
 

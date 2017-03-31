@@ -117,8 +117,10 @@ func (c *MsgCache) Len() (result int) {
 	return result
 }
 
-func (c *MsgCache) remove(name string, rtype uint16) error {
+func (c *MsgCache) Remove(name string, rtype uint16) error {
 	hashVal := hashFunc([]byte(name))
 	segId := hashVal & 255
+	c.lock[segId].Lock()
+	defer c.lock[segId].Unlock()
 	return c.lru[segId].Remove(name, rtype)
 }

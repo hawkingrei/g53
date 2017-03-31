@@ -128,7 +128,6 @@ func (s *DNSServer) GetAllServices() []utils.Service {
 
 func (s *DNSServer) queryDnsCache(r *dns.Msg) (*dns.Msg, error) {
 	return dnsutils.QueryDnsCache(s.publicDns, r)
-
 }
 
 func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns.RR, error) {
@@ -136,7 +135,11 @@ func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns
 	if err == nil {
 		if len(in.Answer) != 0 {
 			logger.Debugf(" '%s' write Cache", r.Question[0].Name)
-			s.publicDns.Add(in.Answer)
+			result := in.Answer
+			if len(in.Extra) != 0 {
+				result = append(result, in.Extra...)
+			}
+			s.publicDns.Add(result)
 		}
 		return in, in.Answer, err
 	}
@@ -146,7 +149,7 @@ func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns
 func (s *DNSServer) handleForward(w dns.ResponseWriter, r *dns.Msg) {
 	// Otherwise just forward the request to another server
 	if result, err := s.queryDnsCache(r); err == nil {
-		logger.Debugf("'%s' Hit Public Cache", r.Question[0].Name)
+		logger.Debugf("'%s' '%S' Hit Public Cache", r.Question[0].Name, dns.TypeToString[r.Question[0].Qtype])
 		w.WriteMsg(result)
 		return
 	}
