@@ -37,6 +37,14 @@ func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 		return m, nil
 	}
 
+	if recordType == dns.TypeA || recordType == dns.TypeAAAA {
+		if result[len(result)-1].Header().Rrtype != dns.TypeA || result[len(result)-1].Header().Rrtype != dns.TypeAAAA {
+			s.Remove(name, recordType)
+			return m, nil
+		}
+
+	}
+
 	for v := 0; v < len(result); v++ {
 		m.Answer = append(m.Answer, result[v])
 	}

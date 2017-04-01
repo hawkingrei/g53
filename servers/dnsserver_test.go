@@ -135,14 +135,13 @@ func TestDNSResponse(t *testing.T) {
 		}
 		if len(r.Answer) == 0 {
 			return
-		}		
+		}
 		rrType := dns.Type(r.Answer[len(r.Answer)-1].Header().Rrtype).String()
 		if input.qType != rrType {
-			if len(r.Extra)!=0 && dns.Type(r.Extra[len(r.Extra)-1].Header().Rrtype).String() != input.qType{
-				t.Error("Did not receive ", input.qType, " resource record")	
+			if len(r.Extra) != 0 && dns.Type(r.Extra[len(r.Extra)-1].Header().Rrtype).String() != input.qType {
+				t.Error("Did not receive ", input.qType, " resource record")
 			}
-		} 
-		
+		}
 
 	}
 
