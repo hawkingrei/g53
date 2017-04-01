@@ -71,7 +71,7 @@ func TestDNSResponse(t *testing.T) {
 	//server.AddService("www.duitang.net", Service{RecordType: "CNAME", TTL: 600 , Value: "www.cctv.com",Aliases: "www.duitang.net"})
 	server.AddService(utils.Service{RecordType: "A", TTL: 600, Value: "127.0.0.1", Aliases: "a.duitang.net"})
 	server.AddService(utils.Service{RecordType: "CNAME", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
-	//server.AddService(utils.Service{RecordType: "MX", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
+	server.AddService(utils.Service{RecordType: "MX", TTL: 600, Value: "wiki.duitang.com", Aliases: "b.duitang.net"})
 	//server.AddService("b.duitang.net", Service{RecordType:"MX",TTL:60,Value:"mxbiz1.qq.com.",Aliases:"b.duitang.net"})
 	//server.AddService("foo", Service{Name: "foo", Image: "bar", IPs: []net.IP{net.ParseIP("127.0.0.1")}})
 	//server.AddService("baz", Service{Name: "baz", Image: "bar", IPs: []net.IP{net.ParseIP("127.0.0.1")}, TTL: -1})
@@ -90,6 +90,7 @@ func TestDNSResponse(t *testing.T) {
 		//{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
 		//{"google.com.", -1, "MX", dns.RcodeSuccess},
 		{"wiki.duitang.net.", -1, "CNAME", dns.RcodeSuccess},
+		{"wiki.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"a.duitang.net.", -1, "A", dns.RcodeSuccess},
 		{"google.com.", -1, "AAAA", dns.RcodeSuccess}, // baidu has AAAA records
@@ -132,15 +133,16 @@ func TestDNSResponse(t *testing.T) {
 				dns.RcodeToString[input.rcode],
 				" got:", dns.RcodeToString[r.Rcode])
 		}
-
-		for _, a := range r.Answer {
-			rrType := dns.Type(a.Header().Rrtype).String()
-			if input.qType != rrType {
-				t.Error("Did not receive ", input.qType, " resource record")
-			} else {
-				//t.Log("Received expected response RR type", rrType, "code", dns.RcodeToString[input.rcode])
+		if len(r.Answer) == 0 {
+			return
+		}		
+		rrType := dns.Type(r.Answer[len(r.Answer)-1].Header().Rrtype).String()
+		if input.qType != rrType {
+			if len(r.Extra)!=0 && dns.Type(r.Extra[len(r.Extra)-1].Header().Rrtype).String() != input.qType{
+				t.Error("Did not receive ", input.qType, " resource record")	
 			}
-		}
+		} 
+		
 
 	}
 
