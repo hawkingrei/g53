@@ -134,12 +134,12 @@ func (s *DNSServer) DNSExchange(nameservers string, r *dns.Msg) (*dns.Msg, []dns
 	in, _, err := s.dnsclient.Exchange(r, nameservers)
 	if err == nil {
 		if len(in.Answer) != 0 {
-			logger.Debugf(" '%s' write Cache", r.Question[0].Name)
+			logger.Debugf(" '%s' '%s' write Cache", r.Question[0].Name, dns.TypeToString[r.Question[0].Qtype])
 			result := in.Answer
 			if len(in.Extra) != 0 {
 				result = append(result, in.Extra...)
 			}
-			s.publicDns.Add(result)
+			s.publicDns.Add(result, r.Question[0].Qtype)
 		}
 		return in, in.Answer, err
 	}

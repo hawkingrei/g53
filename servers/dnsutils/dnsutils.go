@@ -15,15 +15,6 @@ func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 	recordType := r.Question[0].Qtype
 	result, err := s.Get(name, recordType)
 	if err != nil {
-		if recordType == dns.TypeA || recordType == dns.TypeAAAA {
-			result, err = s.Get(name, dns.TypeCNAME)
-			for v := 0; v < len(result); v++ {
-				m.Answer = append(m.Answer, result[v])
-			}
-			if err != nil {
-				return m, err
-			}
-		}
 		return m, err
 	}
 	if recordType == dns.TypeCNAME {
@@ -38,15 +29,18 @@ func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 	}
 
 	if recordType == dns.TypeA || recordType == dns.TypeAAAA {
-		if result[len(result)-1].Header().Rrtype != dns.TypeA || result[len(result)-1].Header().Rrtype != dns.TypeAAAA {
+		if result[len(result)-1].Header().Rrtype != dns.TypeA || result[len(result)-1].Header().Rrtype != dns.TypeAAAA && result[len(result)-1].Header().Rrtype != dns.TypeSOA {
 			s.Remove(name, recordType)
 			return m, nil
 		}
-
 	}
 
 	for v := 0; v < len(result); v++ {
-		m.Answer = append(m.Answer, result[v])
+		if result[v].Header().Rrtype != dns.TypeSOA {
+			m.Answer = append(m.Answer, result[v])
+			continue
+		}
+		m.Extra = append(m.Extra, result[v])
 	}
 
 	return m, nil

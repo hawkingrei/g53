@@ -26,12 +26,12 @@ func TestSimleMsgLRU(t *testing.T) {
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}
-	l.Add(getmsg("www.baidu.com.", dns.TypeA).Answer)
-	l.Add(getmsg("www.google.com.", dns.TypeA).Answer)
-	l.Add(getmsg("www.google.com.", dns.TypeAAAA).Answer)
-	l.Add(getmsg("www.renren.com.", dns.TypeA).Answer)
-	l.Add(getmsg("www.taobao.com.", dns.TypeA).Answer)
-	l.Add(getmsg("www.weibo.com.", dns.TypeA).Answer)
+	l.Add(getmsg("www.baidu.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.google.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.google.com.", dns.TypeAAAA).Answer, dns.TypeAAAA)
+	l.Add(getmsg("www.renren.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.taobao.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.weibo.com.", dns.TypeA).Answer, dns.TypeA)
 	fmt.Println(l.Get("www.baidu.com.", dns.TypeA))
 	fmt.Println(l.Get("www.weibo.com.", dns.TypeA))
 	fmt.Println(l.Get("www.weibo.com.", dns.TypeCNAME))

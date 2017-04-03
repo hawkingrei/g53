@@ -50,11 +50,10 @@ func (c *LRU) Purge() {
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
-func (c *LRU) Add(s []dns.RR) bool {
+func (c *LRU) Add(s []dns.RR, rrtype uint16) bool {
 	if len(s) == 0 {
 		return false
 	}
-	rrtype := s[0].Header().Rrtype
 	name := s[0].Header().Name
 	if elements := c.items[name]; elements != nil {
 		if element := elements.table[rrtype]; element == nil {

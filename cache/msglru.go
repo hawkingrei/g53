@@ -89,12 +89,12 @@ func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
-func (c *MsgCache) Add(s []dns.RR) bool {
+func (c *MsgCache) Add(s []dns.RR, rtype uint16) bool {
 	hashVal := hashFunc([]byte(s[0].Header().Name))
 	segId := hashVal & 255
 	c.lock[segId].Lock()
 	defer c.lock[segId].Unlock()
-	return c.lru[segId].Add(s)
+	return c.lru[segId].Add(s, rtype)
 }
 
 // Keys returns a slice of the keys in the cache, from oldest to newest.
