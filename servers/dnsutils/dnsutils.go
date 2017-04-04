@@ -60,7 +60,7 @@ func QueryDnsCache(s *cache.MsgCache, r *dns.Msg) (*dns.Msg, error) {
 	}
 
 	if recordType == dns.TypeA || recordType == dns.TypeAAAA {
-		if result[len(result)-1].Header().Rrtype != dns.TypeA || result[len(result)-1].Header().Rrtype != dns.TypeAAAA && result[len(result)-1].Header().Rrtype != dns.TypeSOA {
+		if result[len(result)-1].Header().Rrtype != dns.TypeA && result[len(result)-1].Header().Rrtype != dns.TypeAAAA || result[len(result)-1].Header().Rrtype == dns.TypeSOA {
 			s.Remove(name, recordType)
 			return m, nil
 		}
