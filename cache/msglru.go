@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"github.com/hawkingrei/g53/cache/simplemsglru"
 	"github.com/miekg/dns"
 	"github.com/spaolacci/murmur3"
@@ -54,38 +53,12 @@ func (c *MsgCache) Purge() {
 }
 
 // Get looks up a key's value from the cache.
-func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, error) {
+func (c *MsgCache) Get(name string, rtype uint16) ([]dns.RR, *time.Time, error) {
 	hashVal := hashFunc([]byte(name))
 	segId := hashVal & 255
 	c.lock[segId].Lock()
 	defer c.lock[segId].Unlock()
-	result, rtime, err := c.lru[segId].Get(name, rtype)
-	if err != nil {
-		return result, err
-	}
-	nowtime := time.Now()
-	var rr []dns.RR = make([]dns.RR, len(result))
-	for v := 0; v < len(result); v++ {
-		expiration := rtime.Add(time.Duration(result[v].Header().Ttl) * time.Second)
-		if expiration.Before(nowtime) {
-			c.lru[segId].Remove(name, rtype)
-			return []dns.RR{}, errors.New("expiration")
-		}
-	}
-	cttl := nowtime.Sub(*rtime).Seconds()
-	for v := 0; v < len(result); v++ {
-		rr[v] = dns.Copy(result[v])
-	}
-	for v := 0; v < len(rr); v++ {
-		tmp := rr[v].Header().Ttl - Round(cttl)
-		if tmp <= 1 {
-			c.lru[segId].Remove(name, rtype)
-			return []dns.RR{}, errors.New("expiration")
-		}
-		rr[v].Header().Ttl = tmp
-	}
-
-	return rr, err
+	return c.lru[segId].Get(name, rtype)
 }
 
 // Add adds a value to the cache.  Returns true if an eviction occurred.
