@@ -13,7 +13,7 @@ install:
   - go get github.com/tools/godep
   - go get github.com/hawkingrei/g53
 before_script: 
-  - go get && make all 
+  - go get && make compile 
 script:
   - go  test -v ./...
 

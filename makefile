@@ -6,5 +6,9 @@ BUILD_TIME=`date -u +%Y.%m.%d-%H:%M:%S%Z`
 VERSION=0.0.1
 # Setup the -ldflags option for go build here, interpolate the variable values
 LDFLAGS=-ldflags "-X "github.com/hawkingrei/g53/version".GitCommit=${GITTAG} -X "github.com/hawkingrei/g53/version".BuildTime=${BUILD_TIME} -X "github.com/hawkingrei/g53/version".Version=${VERSION}"
-all:
-	go build ${LDFLAGS} -o ${GOPATH}/bin/g53 
+all: compile
+
+compile:
+	go build ${LDFLAGS} -o g53
+docker:
+	go build ${LDFLAGS} -o ${GOPATH}/bin/g53
