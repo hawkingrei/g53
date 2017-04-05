@@ -2,9 +2,9 @@ package dnsutils
 
 import (
 	"errors"
-	"time"
 	"github.com/hawkingrei/g53/cache"
 	"github.com/miekg/dns"
+	"time"
 )
 
 func Round(val float64) uint32 {
