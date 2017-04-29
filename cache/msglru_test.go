@@ -22,7 +22,7 @@ func TestMsgLRU(t *testing.T) {
 	if err == nil {
 		t.Errorf("should get a error")
 	}
-	l, err := NewMsgCacheWithEvict(256*1024, func(s *[]dns.RR) { fmt.Println(*s) })
+	l, err := NewMsgCacheWithEvict(256*1, func(s *[]dns.RR) { fmt.Println(*s) })
 	if err != nil {
 		t.Errorf("fail to create LRU")
 	}
@@ -30,6 +30,10 @@ func TestMsgLRU(t *testing.T) {
 	l.Add(getmsg("www.renren.com.", dns.TypeA).Answer, dns.TypeA)
 	l.Add(getmsg("www.taobao.com.", dns.TypeA).Answer, dns.TypeA)
 	l.Add(getmsg("www.weibo.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.qq.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.sohu.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.tmall.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.jd.com.", dns.TypeA).Answer, dns.TypeA)
 	fmt.Println(l.Get("www.baidu.com.", dns.TypeA))
 	fmt.Println(l.Get("www.weibo.com.", dns.TypeA))
 	fmt.Println(l.Len())
