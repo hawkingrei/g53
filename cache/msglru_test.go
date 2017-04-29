@@ -34,6 +34,10 @@ func TestMsgLRU(t *testing.T) {
 	l.Add(getmsg("www.sohu.com.", dns.TypeA).Answer, dns.TypeA)
 	l.Add(getmsg("www.tmall.com.", dns.TypeA).Answer, dns.TypeA)
 	l.Add(getmsg("www.jd.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.hao123.com.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.csdn.net.", dns.TypeA).Answer, dns.TypeA)
+	l.Add(getmsg("www.soso.com.", dns.TypeA).Answer, dns.TypeA)
+
 	fmt.Println(l.Get("www.baidu.com.", dns.TypeA))
 	fmt.Println(l.Get("www.weibo.com.", dns.TypeA))
 	fmt.Println(l.Len())

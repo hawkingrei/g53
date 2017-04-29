@@ -38,8 +38,8 @@ type DNSServer struct {
 
 // NewDNSServer create a new DNSServer
 func NewDNSServer(c *utils.Config) *DNSServer {
-	publicDns, _ := cache.NewMsgCache(256 * 1000)
-	privateDns, _ := cache.New(100000000)
+	publicDns, _ := cache.NewMsgCache(256 * 1)
+	privateDns, _ := cache.New(10000)
 	dnsclient := new(dns.Client)
 	dnsclient.UDPSize = uint16(4096)
 	dnsclient.Timeout = time.Duration(5) * time.Second
