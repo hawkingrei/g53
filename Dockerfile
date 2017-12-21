@@ -1,4 +1,4 @@
-FROM golang:1.8.1-alpine
+FROM golang:1.8.3-alpine
 RUN apk add --no-cache ca-certificates
 RUN set -ex \
 	&& apk add --no-cache --virtual .build-deps \
